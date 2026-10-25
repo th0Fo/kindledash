@@ -45,10 +45,33 @@ schreiben() {
     mv $WERTE.neu $WERTE
 }
 
-# Befehle der App (Update) kommen über einen lokalen Port, nur vom Kindle selbst erreichbar
+# Befehle der App. Der Kindle-Browser sperrt Anfragen an den Kindle selbst, darf aber
+# Dateien lesen. Die App lädt deshalb /tmp/kindledash/befehl/<befehl>.js als Skript.
+# Die Dateien stehen auf einer Zugriffszeit von 2020; liest jemand eine, wird ihre
+# Zugriffszeit neuer als die Änderungszeit (relatime auf /var), und das erkennt die
+# Schleife hier jede Sekunde.
 befehle_starten() {
     [ -f $TMP/befehl.pid ] && kill -0 "$(cat $TMP/befehl.pid)" 2>/dev/null && return
-    busybox nc -lk -s 127.0.0.1 -p 8737 -e $VZ/befehl.sh 2>>$TMP/dienst.log &
+    (
+        mkdir -p $TMP/befehl
+        for b in pruefen aktualisieren; do
+            echo "kindledashBefehl(\"$b\");" > $TMP/befehl/$b.js
+            touch -t 202001010000 $TMP/befehl/$b.js
+        done
+        while true; do
+            for b in pruefen aktualisieren; do
+                f=$TMP/befehl/$b.js
+                if [ "$(stat -c %X $f)" -gt "$(stat -c %Y $f)" ]; then
+                    touch -t 202001010000 $f
+                    case "$(cat $TMP/update-status.txt 2>/dev/null)" in laeuft*) continue ;; esac
+                    log "Befehl $b"
+                    if [ $b = aktualisieren ]; then aufgabe=installieren; else aufgabe=pruefen; fi
+                    nohup sh $VZ/aktualisieren.sh $aufgabe > /dev/null 2>&1 &
+                fi
+            done
+            sleep 1
+        done
+    ) &
     echo $! > $TMP/befehl.pid
 }
 
@@ -92,8 +115,9 @@ if [ "$1" = "--boot" ]; then
 fi
 lipc-set-prop com.lab126.powerd preventScreenSaver 1
 ssh_starten
-chmod +x $VZ/befehl.sh 2>/dev/null
 befehle_starten
+# gleich eine frische Datei schreiben, sonst liest die App bis zur ersten Antwort den alten Stand
+schreiben false "" "startet"
 [ "$1" = "--boot" ] || [ "$1" = "--app" ] && lipc-set-prop com.lab126.appmgrd start $APP
 
 fehler=0

@@ -17,7 +17,12 @@ mkdir -p $TMP
 
 # Stand für die App, Felder durch | getrennt:
 #   laeuft|<Prozent>|<Text>   fertig|<Version>|<Uhrzeit in Sekunden>   fehler|<Text>   geprueft
-status() { echo "$*" > $STATUS.neu; mv $STATUS.neu $STATUS; echo "$(date '+%d.%m. %H:%M:%S') update: $*" >> $TMP/dienst.log; }
+status() {
+    echo "$*" > $STATUS.neu; mv $STATUS.neu $STATUS
+    # für die App, die den Stand während des Updates jede Sekunde als Skript lädt
+    printf 'kindledashUpdate("%s");\n' "$*" > $TMP/update.js.neu; mv $TMP/update.js.neu $TMP/update.js
+    echo "$(date '+%d.%m. %H:%M:%S') update: $*" >> $TMP/dienst.log
+}
 schritt() { status "laeuft|$1|$2"; }
 fehler() { status "fehler|$1"; }
 
@@ -74,7 +79,7 @@ installieren() {
 
     schritt 92 "Spiele $tag ein"
     cp $neu/web/* $VZ/web/
-    for f in dienst.sh aktualisieren.sh befehl.sh installieren.sh kindledash.conf kindledash-starten.sh \
+    for f in dienst.sh aktualisieren.sh installieren.sh kindledash.conf kindledash-starten.sh \
              kindledash-zuruecksetzen.sh ssh-zugang.sh; do
         [ -f "$neu/$f" ] && cp "$neu/$f" $VZ/$f
     done

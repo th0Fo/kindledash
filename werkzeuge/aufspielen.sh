@@ -8,7 +8,7 @@ QUELLE=$(cd "$(dirname "$0")/../kindle" && pwd)
 
 $K 'mkdir -p /mnt/us/kindledash/web' || exit 1
 for f in dienst.sh installieren.sh kindledash.conf kindledash-starten.sh ssh-zugang.sh \
-         aktualisieren.sh befehl.sh kindledash-zuruecksetzen.sh; do
+         aktualisieren.sh kindledash-zuruecksetzen.sh; do
     # Windows-Zeilenenden aus der Arbeitskopie unterwegs entfernen
     tr -d '\r' < "$QUELLE/$f" | $K "cat > /mnt/us/kindledash/$f" || exit 1
 done

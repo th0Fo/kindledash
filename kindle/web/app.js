@@ -252,10 +252,27 @@
 
   // --- Updates ----------------------------------------------------------------
   // Der Dienst prüft alle sechs Stunden GitHub und meldet Version und Update in werte.js.
-  // Befehle gehen an befehl.sh, das nur auf dem Kindle selbst lauscht.
+  // Anfragen an den Kindle selbst sperrt der Browser. Ein Befehl ist deshalb das Laden
+  // einer Signaldatei, den Lesezugriff bemerkt dienst.sh.
 
-  var BEFEHL_URL = "http://127.0.0.1:8737";
+  var BEFEHL_ORDNER = "file:///tmp/kindledash/befehl/";
+  var UPDATE_DATEI = "file:///tmp/kindledash/update.js";
   var updateGestartet = false;
+  window.kindledashBefehl = function () { /* nur das Lesen zählt */ };
+  window.kindledashUpdate = function (s) {
+    if (werte.letzte) { werte.letzte.update = s; }
+    if ($("dialog-update").className.indexOf("offen") >= 0) { dialogUpdate(); }
+  };
+
+  function skriptLaden(id, url, weiter) {
+    var alt = $(id), s = document.createElement("script");
+    if (alt) { alt.parentNode.removeChild(alt); }
+    s.id = id;
+    s.src = url + "?t=" + new Date().getTime();
+    s.onload = function () { if (weiter) { weiter(true); } };
+    s.onerror = function () { if (weiter) { weiter(false); } };
+    document.body.appendChild(s);
+  }
 
   function stand() {
     var w = werte.letzte;
@@ -267,11 +284,8 @@
     return !!(s && s.neu && s.neu !== s.version);
   }
 
-  function befehl(pfad, weiter) {
-    var x = new XMLHttpRequest();
-    x.open("GET", BEFEHL_URL + pfad, true);
-    x.onreadystatechange = function () { if (x.readyState === 4 && weiter) { weiter(x.status === 200); } };
-    x.send();
+  function befehl(name, weiter) {
+    skriptLaden("befehl-skript", BEFEHL_ORDNER + name + ".js", weiter);
   }
 
   function versionKnopf() {
@@ -302,23 +316,11 @@
 
   var updateAbfrage = null, updateStartZeit = 0, updateErgebnis = false;
 
-  // Während des Updates den Stand jede Sekunde direkt beim Dienst abfragen,
+  // Während des Updates den Stand jede Sekunde aus update.js lesen,
   // werte.js wird nur alle 30 Sekunden neu geschrieben
   function updateVerfolgen() {
     if (updateAbfrage) { return; }
-    updateAbfrage = setInterval(function () {
-      var x = new XMLHttpRequest();
-      x.open("GET", BEFEHL_URL + "/status", true);
-      x.onreadystatechange = function () {
-        if (x.readyState !== 4 || x.status !== 200) { return; }
-        try {
-          var a = JSON.parse(x.responseText);
-          if (werte.letzte) { werte.letzte.update = a.update; werte.letzte.version = a.version; werte.letzte.neu = a.neu; }
-        } catch (e) { return; }
-        dialogUpdate();
-      };
-      x.send();
-    }, 1000);
+    updateAbfrage = setInterval(function () { skriptLaden("update-skript", UPDATE_DATEI); }, 1000);
   }
 
   function updateNichtVerfolgen() {
@@ -432,7 +434,8 @@
     $("pv").className = "wert" + (daten.pvW >= 1000 ? " lang" : "");
     $("haus").innerHTML = daten.hausW + "<span>W</span>";
     $("haus").className = "wert" + (daten.hausW >= 1000 ? " lang" : "");
-    var grund = werte.fehler === "kein GX gefunden" ? "Kein GX im WLAN gefunden" :
+    var grund = werte.fehler === "startet" ? "Verbindung wird aufgebaut" :
+      werte.fehler === "kein GX gefunden" ? "Kein GX im WLAN gefunden" :
       (werte.fehler === "Dienst läuft nicht" ? "Der Dienst auf dem Kindle läuft nicht" :
         (werte.gx ? "GX " + werte.gx + " antwortet nicht" : ""));
     $("letzte-werte").innerHTML = (werte.letzteFrisch ? "letzte Werte um " + uhrzeit(werte.letzteFrisch) + "<br>" : "") + grund;
@@ -855,7 +858,7 @@
       if (t.id === "version-knopf") {
         if (updateDa()) { oeffne("dialog-update"); } else {
           $("version-knopf").innerHTML = "wird geprüft";
-          befehl("/pruefen", function () { setTimeout(function () { werteHolen(versionKnopf); }, 35000); });
+          befehl("pruefen", function () { setTimeout(function () { werteHolen(versionKnopf); }, 35000); });
         }
         return;
       }
@@ -865,8 +868,8 @@
           updateStartZeit = new Date().getTime();
           if (werte.letzte) { werte.letzte.update = "laeuft|1|Starte das Update"; }
           dialogUpdate();
-          befehl("/aktualisieren", function (ok) {
-            if (!ok && werte.letzte) { werte.letzte.update = "fehler|der Dienst antwortet nicht"; dialogUpdate(); }
+          befehl("aktualisieren", function (ok) {
+            if (!ok && werte.letzte) { werte.letzte.update = "fehler|der Dienst läuft nicht"; dialogUpdate(); }
           });
         }
         return;
