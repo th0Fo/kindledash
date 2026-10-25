@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+body { font-size: 30px; font-family: sans-serif; margin: 30px; background: #fff; color: #000; }
+#v { --x: 5px; }
+td { padding: 2px 14px; border-bottom: 1px solid #999; }
+</style></head>
+<body><h2>Probe</h2><table id="t"></table>
+<svg width="0" height="0" style="position:absolute"><defs><symbol id="s" viewBox="0 0 10 10"><rect width="10" height="10"/></symbol></defs></svg>
+<div id="v"></div>
+<svg id="u" width="40" height="40"><use xlink:href="#s" href="#s"/></svg>
+<script>
+var r = [];
+function add(k, v) { r.push([k, String(v)]); }
+var st = document.body.style;
+add("UA", navigator.userAgent);
+add("size", window.innerWidth + "x" + window.innerHeight + " dpr " + window.devicePixelRatio);
+add("flex", "flex" in st);
+add("webkitFlex", "webkitFlex" in st);
+add("webkitBoxFlex", "webkitBoxFlex" in st);
+add("grid", "gridTemplateColumns" in st || "webkitGridTemplateColumns" in st);
+add("css var", getComputedStyle(document.getElementById("v")).getPropertyValue("--x") || "nein");
+add("calc", (function(){ var d=document.createElement("div"); d.style.width="calc(10px + 5px)"; return d.style.width; })());
+add("transform", "transform" in st || "webkitTransform" in st);
+add("Promise", typeof Promise);
+add("fetch", typeof fetch);
+add("XHR", typeof XMLHttpRequest);
+add("localStorage", (function(){ try { localStorage.setItem("a","1"); return localStorage.getItem("a"); } catch(e) { return "fehler " + e; } })());
+add("arrow fn", (function(){ try { eval("(()=>1)()"); return true; } catch(e) { return false; } })());
+add("template", (function(){ try { eval("`a`"); return true; } catch(e) { return false; } })());
+add("let", (function(){ try { eval("let q=1"); return true; } catch(e) { return false; } })());
+add("svg use bbox", (function(){ try { return document.getElementById("u").getBBox().width; } catch(e) { return "fehler"; } })());
+add("canvas", !!document.createElement("canvas").getContext);
+add("kindle obj", typeof window.kindle);
+add("@font-face woff", "test unten");
+var t = document.getElementById("t");
+for (var i = 0; i < r.length; i++) { var tr = document.createElement("tr"); tr.innerHTML = "<td>" + r[i][0] + "</td><td>" + r[i][1] + "</td>"; t.appendChild(tr); }
+</script></body></html>

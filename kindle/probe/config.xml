@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:kindle="http://kindle.amazon.com/ns/widget-extensions"
+    id="de.kindledash.app"
+    version="0.1"
+    viewmodes="fullscreen">
+
+    <name>KindleDash</name>
+    <content src="index.html" />
+    <feature name="http://kindle.amazon.com/apis" required="true">
+        <param name="appmgr" value="yes"/>
+        <param name="dev" value="yes"/>
+        <param name="device" value="yes"/>
+        <param name="gestures" value="yes"/>
+        <param name="net" value="yes"/>
+        <param name="messaging" value="yes"/>
+        <param name="filesystem" value="yes"/>
+    </feature>
+
+    <kindle:gestures>
+        <kindle:param name="tap" value="yes"/>
+        <kindle:param name="swipe" value="yes"/>
+    </kindle:gestures>
+</widget>
