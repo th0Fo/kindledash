@@ -166,9 +166,62 @@ body.dialog-offen #schleier { display: block; }
 .fakten b { display: block; font-size: 52px; margin-top: 4px; }
 .knoepfe { display: -webkit-box; margin-top: 40px; }
 .knopf { -webkit-box-flex: 1; height: 112px; line-height: 104px; text-align: center; border: 4px solid #000; border-radius: 8px; font-size: 38px; font-weight: bold; }
-.knoepfe .knopf:first-child { margin-right: 24px; }
-.knoepfe.einzeln .knopf { margin-right: 0; }
+.knoepfe .knopf { margin-right: 24px; }
+.knoepfe .knopf:last-child { margin-right: 0; }
 .knopf.primaer { background: #000; color: #fff; -webkit-box-flex: 1.4; }
+
+/* Einrichtungsassistent */
+#assistent { display: none; position: fixed; left: 0; top: 0; width: 1072px; height: 1448px; background: #fff; z-index: 50; }
+body.assistent-offen #assistent { display: block; }
+body.assistent-offen #seite { visibility: hidden; }
+.as-kopf { position: absolute; left: 56px; top: 44px; width: 960px; }
+.as-schritt { float: right; }
+.as-fortschritt { display: -webkit-box; margin-top: 18px; }
+.as-fortschritt i { display: block; -webkit-box-flex: 1; height: 12px; margin-right: 8px; background: #e4e4e4; border-radius: 6px; }
+.as-fortschritt i:last-child { margin-right: 0; }
+.as-fortschritt i.an { background: #000; }
+.as-inhalt { position: absolute; left: 56px; top: 170px; width: 960px; height: 1060px; overflow: hidden; }
+.as-inhalt h2 { font-size: 52px; line-height: 62px; }
+.as-inhalt .unter { font-size: 30px; color: #3a3a3a; margin-top: 12px; line-height: 40px; }
+.as-fuss { position: absolute; left: 56px; bottom: 56px; width: 960px; margin-top: 0; }
+.as-fuss .knopf.leer { visibility: hidden; }
+
+.eingabe-zeile { display: -webkit-box; margin-top: 40px; }
+.eingabe { -webkit-box-flex: 1; display: block; height: 112px; padding: 0 24px; font-size: 40px; font-family: "Amazon Ember", "Segoe UI", sans-serif;
+  border: 4px solid #000; border-radius: 8px; background: #fff; color: #000; -webkit-appearance: none; outline: none; }
+.eingabe-zeile .knopf { -webkit-box-flex: 0; width: 220px; margin-left: 24px; margin-right: 0; }
+
+.treffer { margin-top: 28px; border-top: 2px solid #b4b4b4; }
+.treffer div { height: 104px; padding: 18px 24px 0; border-bottom: 2px solid #b4b4b4; white-space: nowrap; overflow: hidden; }
+.treffer b { display: block; font-size: 38px; }
+.treffer span { display: block; font-size: 26px; color: #6e6e6e; margin-top: 2px; }
+.treffer div.an { background: #000; color: #fff; }
+.treffer div.an span { color: #e4e4e4; }
+.hinweis-zeile { margin-top: 28px; font-size: 34px; color: #3a3a3a; }
+
+.regler { display: -webkit-box; -webkit-box-align: center; margin-top: 48px; padding-bottom: 36px; border-bottom: 2px solid #e4e4e4; }
+.regler .label { display: block; -webkit-box-flex: 1; font-size: 38px; color: #000; }
+.regler .minus, .regler .plus { width: 112px; height: 112px; line-height: 100px; text-align: center; font-size: 64px; font-weight: bold; border: 4px solid #000; border-radius: 8px; }
+.regler .zahl { width: 260px; text-align: center; font-family: "Ember Heavy", "Amazon Ember", "Segoe UI", sans-serif; font-weight: bold; font-size: 60px; }
+.regler .zahl span { font-size: 34px; font-family: "Amazon Ember", "Segoe UI", sans-serif; margin-left: 6px; }
+.ergebnis { margin-top: 48px; font-size: 38px; }
+.ergebnis b { font-family: "Ember Heavy", "Amazon Ember", "Segoe UI", sans-serif; font-size: 84px; display: block; margin-top: 8px; }
+
+.dach { display: block; margin: 40px auto 0; }
+
+.kompass { margin: 48px auto 0; width: 720px; }
+.kompass div { display: inline-block; vertical-align: top; width: 224px; height: 180px; margin: 0 8px 12px 0; border: 4px solid #000; border-radius: 8px; text-align: center; }
+.kompass div b { display: block; font-size: 52px; margin-top: 40px; }
+.kompass div span { display: block; font-size: 26px; color: #3a3a3a; }
+.kompass div.an { background: #000; color: #fff; }
+.kompass div.an span { color: #e4e4e4; }
+.kompass div.mitte { border-color: #fff; }
+.kompass div.mitte svg { width: 96px; height: 96px; margin-top: 38px; }
+
+.uebersicht { margin-top: 40px; border-top: 2px solid #b4b4b4; }
+.uebersicht div { display: -webkit-box; height: 96px; line-height: 92px; border-bottom: 2px solid #b4b4b4; font-size: 36px; }
+.uebersicht div span { display: block; -webkit-box-flex: 1; color: #6e6e6e; }
+.uebersicht div b { display: block; white-space: nowrap; }
 
 .einstellung { margin-top: 36px; }
 .segment { display: -webkit-box; margin-top: 12px; border: 4px solid #000; border-radius: 8px; overflow: hidden; }
