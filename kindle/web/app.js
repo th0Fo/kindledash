@@ -285,8 +285,10 @@
   }
 
   function dialogUpdate() {
-    var s = stand() || {}, t, knopf = $("update-start");
-    if (updateGestartet || s.update.indexOf("laeuft") === 0) {
+    var s = stand() || { version: "", neu: "", update: "" }, t, knopf = $("update-start");
+    if (!updateGestartet && !updateDa() && s.update.indexOf("fehler") !== 0) {
+      t = "Kein Update verfügbar. Installiert ist " + esc(s.version || "eine unbekannte Version") + ".";
+    } else if (updateGestartet || s.update.indexOf("laeuft") === 0) {
       t = "Das Update wird installiert. Das Dashboard startet danach von selbst neu.";
     } else if (s.update.indexOf("fehler") === 0) {
       t = "Das letzte Update hat nicht geklappt (" + esc(s.update.substr(8)) + "). Version " + esc(s.version) + " läuft weiter.";
