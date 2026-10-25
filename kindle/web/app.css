@@ -58,18 +58,19 @@ body.quer #kopf-hintergrund { height: 112px; }
 
 /* Hauptwerte */
 #haupt { position: absolute; }
-body.hoch #haupt { left: 56px; top: 124px; width: 960px; height: 440px; border-bottom: 3px solid #000; }
+body.hoch #haupt { left: 56px; top: 120px; width: 960px; height: 470px; border-bottom: 3px solid #000; }
 body.quer #haupt { left: 48px; top: 120px; width: 620px; height: 912px; }
 
-#akku .wert { font-size: 236px; line-height: 200px; margin-top: 8px; letter-spacing: -4px; }
+#akku .wert { font-size: 236px; line-height: 200px; margin-top: 0; letter-spacing: -4px; }
 #akku .wert span { font-size: 120px; margin-left: 8px; letter-spacing: 0; }
-.zellen { display: -webkit-box; height: 40px; margin-top: 24px; }
+.zellen { display: -webkit-box; height: 40px; margin-top: 18px; }
 .zellen i { display: block; -webkit-box-flex: 1; height: 40px; margin-right: 6px; border: 3px solid #000; border-radius: 4px; }
 .zellen i:last-child { margin-right: 0; }
 .zellen i.voll { background: #000; }
 .zellen i.halb { background: -webkit-linear-gradient(left, #000 50%, #fff 50%); }
-.richtung { margin-top: 20px; font-size: 38px; display: -webkit-box; -webkit-box-align: center; }
+.richtung { margin-top: 14px; font-size: 38px; display: -webkit-box; -webkit-box-align: center; }
 .richtung svg { width: 34px; height: 34px; margin-right: 12px; }
+.restzeit { margin-top: 6px; margin-left: 46px; font-size: 30px; color: #3a3a3a; white-space: nowrap; }
 body.hoch #akku { position: absolute; left: 0; top: 0; width: 520px; }
 body.quer #akku { position: absolute; left: 0; top: 10px; width: 620px; }
 
@@ -92,7 +93,7 @@ body.offline #getrennt { display: block; }
 
 /* Heute */
 #heute { position: absolute; }
-body.hoch #heute { left: 56px; top: 596px; width: 960px; height: 380px; border-bottom: 2px solid #b4b4b4; }
+body.hoch #heute { left: 56px; top: 618px; width: 960px; height: 380px; border-bottom: 2px solid #b4b4b4; }
 body.quer #heute { left: 724px; top: 120px; width: 676px; height: 520px; border-bottom: 2px solid #b4b4b4; }
 body.quer #haupt { border-right: 0; }
 #trenner { display: none; position: absolute; left: 696px; top: 130px; width: 3px; height: 900px; background: #000; }
@@ -100,9 +101,10 @@ body.quer #trenner { display: block; }
 
 #wetter { position: absolute; left: 0; top: 0; width: 350px; }
 #wetter .zeile { height: 130px; margin-top: 10px; white-space: nowrap; }
+#wetter-icon, #wetter-icon svg { display: inline-block; vertical-align: middle; }
 #wetter .zeile svg { display: inline-block; vertical-align: middle; width: 110px; height: 110px; margin-right: 14px; }
 #wetter .temp { display: inline-block; vertical-align: middle; font-size: 120px; line-height: 130px; }
-#wetter .text { font-size: 30px; color: #3a3a3a; margin-top: 12px; line-height: 40px; }
+#wetter .text { font-size: 30px; color: #3a3a3a; margin-top: 12px; line-height: 38px; white-space: nowrap; }
 #prognose { position: absolute; }
 body.hoch #prognose { left: 370px; top: 0; width: 590px; }
 /* Querformat: Wetter links oben, Prognose rechts daneben, Kurve über die ganze Breite */
@@ -111,7 +113,8 @@ body.quer #wetter .temp { font-size: 104px; }
 body.quer #wetter .zeile svg { width: 96px; height: 96px; }
 body.quer .prognose-kopf .label { font-size: 26px; }
 body.quer #prognose { left: 0; top: 0; width: 676px; }
-body.quer .prognose-kopf { display: block; margin-left: 330px; height: 276px; }
+body.quer .prognose-kopf { display: block; margin-left: 330px; height: 300px; }
+body.quer #kurve { height: 160px; }
 body.quer .anteil { text-align: left; margin-top: 14px; }
 .prognose-kopf { display: -webkit-box; -webkit-box-align: start; }
 .prognose-kopf .links { -webkit-box-flex: 1; }
@@ -123,13 +126,13 @@ body.quer .anteil { text-align: left; margin-top: 14px; }
 .legende span { display: -webkit-box; -webkit-box-align: center; margin-right: 28px; }
 .legende i { display: block; width: 28px; margin-right: 10px; }
 .legende .flaeche-m { height: 18px; background: #e4e4e4; border-bottom: 2px solid #6e6e6e; }
-.legende .linie-m { height: 4px; background: #000; }
+.legende .jetzt-m { height: 18px; width: 2px; margin-left: 13px; margin-right: 23px; border-left: 2px dashed #000; }
 #kurve { margin-top: 6px; height: 170px; }
 #kurve svg { display: block; }
 
 /* Woche */
 #woche-bereich { position: absolute; }
-body.hoch #woche-bereich { left: 56px; top: 996px; width: 960px; height: 420px; }
+body.hoch #woche-bereich { left: 56px; top: 1014px; width: 960px; height: 420px; }
 body.quer #woche-bereich { left: 724px; top: 660px; width: 676px; height: 380px; }
 .woche-kopf { height: 38px; }
 .woche-kopf .rechts-label { float: right; }
