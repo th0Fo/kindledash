@@ -3,7 +3,7 @@
         xmlns:kindle="http://kindle.amazon.com/ns/widget-extensions"
     id="de.kindledash.app"
     version="0.1"
-    viewmodes="fullscreen">
+    viewmodes="windowed">
 
     <name>KindleDash</name>
     <content src="index.html" />

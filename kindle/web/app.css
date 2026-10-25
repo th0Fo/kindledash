@@ -1,0 +1,174 @@
+/*
+ * KindleDash, Paperwhite 3: 1072 x 1448 px, 16 Graustufen.
+ * Der Kindle-Browser (WebKit um 2013) kennt keine CSS-Variablen, kein
+ * Flexbox nach heutigem Standard und kein Grid. Deshalb feste Werte und
+ * -webkit-box. Die Werte folgen diesen Tokens:
+ *
+ *   papier  #fff     tinte   #000     tinte-2 #3a3a3a
+ *   tinte-3 #6e6e6e  linie   #b4b4b4  flaeche #e4e4e4
+ *   Schrift 24 30 38 52 84 140 236 px, Raster 4 px, Radien 6 8 12 px
+ */
+
+@font-face { font-family: "Ember Heavy"; src: url("file:///usr/java/lib/fonts/Amazon-Ember-Heavy.ttf"); }
+
+* { margin: 0; padding: 0; -webkit-box-sizing: border-box; box-sizing: border-box; }
+html, body { background: #fff; color: #000; }
+body {
+  font-family: "Amazon Ember", "Segoe UI", sans-serif;
+  font-size: 30px;
+  overflow: hidden;
+  -webkit-user-select: none;
+}
+#seite { position: relative; overflow: hidden; background: #fff; }
+body.hoch #seite { width: 1072px; height: 1448px; }
+body.quer #seite { width: 1448px; height: 1072px; }
+
+/* Das App-Fenster bleibt auf dem Kindle hochkant, die Seite wird deshalb selbst
+   gedreht. Am PC (Fenster schon quer) entfällt die Drehung. */
+body.quer.gedreht #seite { position: absolute; left: 0; top: 0; -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+body.quer.gedreht.cw #seite { -webkit-transform: translate(1072px, 0) rotate(90deg); transform: translate(1072px, 0) rotate(90deg); }
+body.quer.gedreht.ccw #seite { -webkit-transform: translate(0, 1448px) rotate(-90deg); transform: translate(0, 1448px) rotate(-90deg); }
+
+.label { font-size: 30px; color: #6e6e6e; }
+.wert, .kwh, .temp, .fakten b, .anteil b, .tag .t, .tag .e { font-family: "Ember Heavy", "Amazon Ember", "Segoe UI", sans-serif; font-weight: bold; }
+svg.i { fill: none; stroke: #000; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Kopf */
+#kopf { position: absolute; height: 64px; display: -webkit-box; -webkit-box-align: center; }
+body.hoch #kopf { left: 56px; right: 56px; top: 36px; width: 960px; }
+body.quer #kopf { left: 48px; right: 48px; top: 28px; width: 1352px; }
+#kopf .datum { -webkit-box-flex: 1; font-size: 38px; font-weight: bold; white-space: nowrap; }
+#kopf #uhr { font-weight: normal; color: #6e6e6e; margin-left: 14px; }
+#kopf .rechts { display: -webkit-box; -webkit-box-align: center; white-space: nowrap; }
+.status { font-size: 30px; color: #3a3a3a; display: -webkit-box; -webkit-box-align: center; margin-right: 22px; }
+.status svg { width: 30px; height: 30px; margin-right: 10px; }
+.knopf-icon { display: block; width: 64px; height: 64px; padding: 12px; margin-left: 8px; border-radius: 8px; }
+.knopf-icon svg { width: 40px; height: 40px; }
+.knopf-icon.aktiv { background: #000; }
+.knopf-icon.aktiv svg { stroke: #fff; }
+
+body.netzausfall #kopf-hintergrund { display: block; }
+body.netzausfall #kopf .datum, body.netzausfall #kopf #uhr, body.netzausfall .status { color: #fff; }
+body.netzausfall #kopf svg.i { stroke: #fff; }
+body.netzausfall .status { font-weight: bold; }
+body.netzausfall #laden-knopf { display: none; }
+#kopf-hintergrund { display: none; position: absolute; left: 0; top: 0; right: 0; background: #000; }
+body.hoch #kopf-hintergrund { height: 124px; }
+body.quer #kopf-hintergrund { height: 112px; }
+
+/* Hauptwerte */
+#haupt { position: absolute; }
+body.hoch #haupt { left: 56px; top: 124px; width: 960px; height: 440px; border-bottom: 3px solid #000; }
+body.quer #haupt { left: 48px; top: 120px; width: 620px; height: 912px; }
+
+#akku .wert { font-size: 236px; line-height: 200px; margin-top: 8px; letter-spacing: -4px; }
+#akku .wert span { font-size: 120px; margin-left: 8px; letter-spacing: 0; }
+.zellen { display: -webkit-box; height: 40px; margin-top: 24px; }
+.zellen i { display: block; -webkit-box-flex: 1; height: 40px; margin-right: 6px; border: 3px solid #000; border-radius: 4px; }
+.zellen i:last-child { margin-right: 0; }
+.zellen i.voll { background: #000; }
+.zellen i.halb { background: -webkit-linear-gradient(left, #000 50%, #fff 50%); }
+.richtung { margin-top: 20px; font-size: 38px; display: -webkit-box; -webkit-box-align: center; }
+.richtung svg { width: 34px; height: 34px; margin-right: 12px; }
+body.hoch #akku { position: absolute; left: 0; top: 0; width: 520px; }
+body.quer #akku { position: absolute; left: 0; top: 10px; width: 620px; }
+
+.fluss-wert { position: absolute; border-left: 3px solid #b4b4b4; padding-left: 32px; }
+.fluss-wert .wert { font-size: 140px; line-height: 136px; margin-top: 6px; }
+.fluss-wert .wert span { font-size: 52px; margin-left: 8px; color: #3a3a3a; font-family: "Amazon Ember", "Segoe UI", sans-serif; }
+body.hoch #pv-block { left: 568px; top: 0; width: 392px; height: 196px; }
+body.hoch #haus-block { left: 568px; top: 216px; width: 392px; height: 196px; }
+body.quer #fluss { position: absolute; left: 0; top: 540px; width: 620px; height: 330px; border-top: 3px solid #000; }
+body.quer #pv-block { left: 0; top: 36px; width: 300px; border-left: 0; padding-left: 0; }
+body.quer #haus-block { left: 320px; top: 36px; width: 300px; }
+body.quer .fluss-wert .wert { font-size: 120px; line-height: 120px; }
+
+#getrennt { display: none; position: absolute; left: 0; top: 40px; }
+#getrennt svg { width: 96px; height: 96px; }
+#getrennt .gross { font-size: 84px; font-weight: bold; line-height: 88px; margin-top: 24px; }
+#getrennt .klein { font-size: 38px; color: #3a3a3a; margin-top: 20px; }
+body.offline #akku, body.offline #fluss { display: none; }
+body.offline #getrennt { display: block; }
+
+/* Heute */
+#heute { position: absolute; }
+body.hoch #heute { left: 56px; top: 596px; width: 960px; height: 380px; border-bottom: 2px solid #b4b4b4; }
+body.quer #heute { left: 724px; top: 120px; width: 676px; height: 520px; border-bottom: 2px solid #b4b4b4; }
+body.quer #haupt { border-right: 0; }
+#trenner { display: none; position: absolute; left: 696px; top: 130px; width: 3px; height: 900px; background: #000; }
+body.quer #trenner { display: block; }
+
+#wetter { position: absolute; left: 0; top: 0; width: 350px; }
+#wetter .zeile { height: 130px; margin-top: 10px; white-space: nowrap; }
+#wetter .zeile svg { display: inline-block; vertical-align: middle; width: 110px; height: 110px; margin-right: 14px; }
+#wetter .temp { display: inline-block; vertical-align: middle; font-size: 120px; line-height: 130px; }
+#wetter .text { font-size: 30px; color: #3a3a3a; margin-top: 12px; line-height: 40px; }
+#prognose { position: absolute; }
+body.hoch #prognose { left: 370px; top: 0; width: 590px; }
+/* Querformat: Wetter links oben, Prognose rechts daneben, Kurve über die ganze Breite */
+body.quer #wetter { width: 310px; }
+body.quer #wetter .temp { font-size: 104px; }
+body.quer #wetter .zeile svg { width: 96px; height: 96px; }
+body.quer .prognose-kopf .label { font-size: 26px; }
+body.quer #prognose { left: 0; top: 0; width: 676px; }
+body.quer .prognose-kopf { display: block; margin-left: 330px; height: 276px; }
+body.quer .anteil { text-align: left; margin-top: 14px; }
+.prognose-kopf { display: -webkit-box; -webkit-box-align: start; }
+.prognose-kopf .links { -webkit-box-flex: 1; }
+.kwh { font-size: 84px; line-height: 90px; margin-top: 4px; }
+.kwh span { font-size: 38px; margin-left: 6px; font-family: "Amazon Ember", "Segoe UI", sans-serif; }
+.anteil { text-align: right; font-size: 30px; color: #3a3a3a; line-height: 38px; }
+.anteil b { display: block; font-size: 52px; line-height: 60px; color: #000; }
+.legende { margin-top: 12px; font-size: 24px; color: #3a3a3a; display: -webkit-box; -webkit-box-align: center; }
+.legende span { display: -webkit-box; -webkit-box-align: center; margin-right: 28px; }
+.legende i { display: block; width: 28px; margin-right: 10px; }
+.legende .flaeche-m { height: 18px; background: #e4e4e4; border-bottom: 2px solid #6e6e6e; }
+.legende .linie-m { height: 4px; background: #000; }
+#kurve { margin-top: 6px; height: 170px; }
+#kurve svg { display: block; }
+
+/* Woche */
+#woche-bereich { position: absolute; }
+body.hoch #woche-bereich { left: 56px; top: 996px; width: 960px; height: 420px; }
+body.quer #woche-bereich { left: 724px; top: 660px; width: 676px; height: 380px; }
+.woche-kopf { height: 38px; }
+.woche-kopf .rechts-label { float: right; }
+#woche { display: -webkit-box; margin-top: 16px; }
+.tag { -webkit-box-flex: 1; width: 0; text-align: center; border-left: 2px solid #e4e4e4; }
+.tag:first-child { border-left: 0; }
+.tag .name { display: inline-block; font-size: 30px; font-weight: bold; padding: 0 12px; border-radius: 6px; }
+.tag.heute-tag .name { background: #000; color: #fff; }
+.tag svg { display: block; width: 66px; height: 66px; margin: 12px auto 6px; }
+.tag .t { font-size: 30px; }
+.tag .t span { color: #6e6e6e; margin-left: 6px; font-family: "Amazon Ember", "Segoe UI", sans-serif; font-weight: normal; }
+.tag .saeule { width: 40px; height: 118px; margin: 14px auto 0; background: #e4e4e4; border-radius: 4px; position: relative; overflow: hidden; }
+.tag .saeule i { display: block; position: absolute; left: 0; right: 0; bottom: 0; background: #3a3a3a; }
+.tag .e { font-size: 30px; margin-top: 8px; }
+body.quer .tag svg { width: 56px; height: 56px; }
+body.quer .tag .t { font-size: 26px; }
+body.quer .tag .saeule { height: 110px; }
+
+/* Dialoge */
+#schleier { display: none; position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.72); }
+.dialog { display: none; position: absolute; background: #fff; border: 4px solid #000; border-radius: 12px; padding: 48px 48px 44px; }
+body.hoch .dialog { left: 56px; width: 960px; top: 300px; }
+body.quer .dialog { left: 244px; width: 960px; top: 120px; }
+body.dialog-offen #schleier { display: block; }
+.dialog.offen { display: block; }
+.dialog h2 { font-size: 52px; display: -webkit-box; -webkit-box-align: center; }
+.dialog h2 svg { width: 56px; height: 56px; margin-right: 18px; }
+.dialog p { font-size: 38px; line-height: 52px; margin-top: 24px; color: #3a3a3a; }
+.fakten { display: -webkit-box; margin-top: 32px; border-top: 2px solid #b4b4b4; border-bottom: 2px solid #b4b4b4; }
+.fakten div { -webkit-box-flex: 1; width: 0; padding: 22px 0; }
+.fakten b { display: block; font-size: 52px; margin-top: 4px; }
+.knoepfe { display: -webkit-box; margin-top: 40px; }
+.knopf { -webkit-box-flex: 1; height: 112px; line-height: 104px; text-align: center; border: 4px solid #000; border-radius: 8px; font-size: 38px; font-weight: bold; }
+.knoepfe .knopf:first-child { margin-right: 24px; }
+.knoepfe.einzeln .knopf { margin-right: 0; }
+.knopf.primaer { background: #000; color: #fff; -webkit-box-flex: 1.4; }
+
+.einstellung { margin-top: 36px; }
+.segment { display: -webkit-box; margin-top: 12px; border: 4px solid #000; border-radius: 8px; overflow: hidden; }
+.segment div { -webkit-box-flex: 1; width: 0; height: 96px; line-height: 88px; text-align: center; font-size: 34px; border-left: 4px solid #000; }
+.segment div:first-child { border-left: 0; }
+.segment div.an { background: #000; color: #fff; font-weight: bold; }
