@@ -17,7 +17,7 @@
     <symbol id="nebel" viewBox="0 0 24 24"><path d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24M16 17H7M17 21H9"/></symbol>
     <symbol id="schnee" viewBox="0 0 24 24"><path d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24M8 15h.01M8 19h.01M12 17h.01M12 21h.01M16 15h.01M16 19h.01"/></symbol>
     <symbol id="gewitter" viewBox="0 0 24 24"><path d="M6 16.33A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.97M13 12l-3 5h4l-3 5"/></symbol>
-    <symbol id="haus" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5M5 9v11h14V9M10 20v-6h4v6"/></symbol>
+    <symbol id="haus-symbol" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5M5 9v11h14V9M10 20v-6h4v6"/></symbol>
     <symbol id="haken" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
     <symbol id="stecker" viewBox="0 0 24 24"><path d="M12 22v-5M9 8V2M15 8V2M18 8v5a6 6 0 0 1-12 0V8Z"/></symbol>
     <symbol id="stecker-aus" viewBox="0 0 24 24"><path d="M12 22v-5M9 8V2M15 8V2M18 8v5a6 6 0 0 1-12 0V8ZM2 2l20 20"/></symbol>
@@ -100,11 +100,15 @@
     <h2><svg class="i"><use xlink:href="#zahnrad"/></svg>Einstellungen</h2>
     <div class="einstellung">
       <span class="label">Ausrichtung</span>
-      <div class="segment" id="ausrichtung"><div data-wert="hoch">Hochformat</div><div data-wert="quer-rechts">Quer, Kabel rechts</div><div data-wert="quer-links">Quer, Kabel links</div></div>
+      <div class="segment" id="ausrichtung"><div data-wert="hoch">Hochformat</div><div data-wert="quer-rechts" class="zwei">Quer<br>Kabel rechts</div><div data-wert="quer-links" class="zwei">Quer<br>Kabel links</div></div>
     </div>
     <div class="einstellung">
-      <span class="label">Ansicht testen</span>
-      <div class="segment" id="zustand"><div data-wert="normal">Normal</div><div data-wert="netzausfall">Stromausfall</div><div data-wert="offline">Offline</div></div>
+      <span class="label">Werte</span>
+      <div class="segment" id="quelle"><div data-wert="anlage">Anlage</div><div data-wert="demo">Demo</div><div data-wert="demo-ausfall" class="zwei">Demo<br>Stromausfall</div></div>
+    </div>
+    <div class="einstellung">
+      <span class="label">Aktualisierung</span>
+      <div class="segment" id="takt"><div data-wert="1">jede Minute</div><div data-wert="2">alle 2 Minuten</div><div data-wert="5">alle 5 Minuten</div></div>
     </div>
     <div class="knoepfe">
       <div class="knopf" id="beenden">Zum Kindle</div>

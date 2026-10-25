@@ -1,0 +1,392 @@
+[
+  {
+    "id": "kd0000000000tab",
+    "type": "tab",
+    "label": "KindleDash",
+    "disabled": false,
+    "info": "Liefert Werte für das Kindle-Dashboard. Liest nur, schreibt nichts an der Anlage."
+  },
+  {
+    "id": "kd00ein",
+    "type": "victron-input-system",
+    "z": "kd0000000000tab",
+    "service": "com.victronenergy.system/0",
+    "path": "/Dc/Battery/Soc",
+    "serviceObj": {
+      "service": "com.victronenergy.system/0",
+      "name": "Venus system"
+    },
+    "pathObj": {
+      "path": "/Dc/Battery/Soc",
+      "type": "float",
+      "name": "Battery State of Charge (%)"
+    },
+    "name": "",
+    "onlyChanges": false,
+    "x": 220,
+    "y": 60,
+    "wires": [
+      [
+        "kd00fn"
+      ]
+    ]
+  },
+  {
+    "id": "kd00fn",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "merken soc",
+    "func": "flow.set('kd_soc', { w: msg.payload, t: Date.now() });\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 560,
+    "y": 60,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "kd01ein",
+    "type": "victron-input-system",
+    "z": "kd0000000000tab",
+    "service": "com.victronenergy.system/0",
+    "path": "/Dc/Battery/Power",
+    "serviceObj": {
+      "service": "com.victronenergy.system/0",
+      "name": "Venus system"
+    },
+    "pathObj": {
+      "path": "/Dc/Battery/Power",
+      "type": "float",
+      "name": "Battery Power (W)"
+    },
+    "name": "",
+    "onlyChanges": false,
+    "x": 220,
+    "y": 120,
+    "wires": [
+      [
+        "kd01fn"
+      ]
+    ]
+  },
+  {
+    "id": "kd01fn",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "merken akkuW",
+    "func": "flow.set('kd_akkuW', { w: msg.payload, t: Date.now() });\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 560,
+    "y": 120,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "kd02ein",
+    "type": "victron-input-system",
+    "z": "kd0000000000tab",
+    "service": "com.victronenergy.system/0",
+    "path": "/Dc/Pv/Power",
+    "serviceObj": {
+      "service": "com.victronenergy.system/0",
+      "name": "Venus system"
+    },
+    "pathObj": {
+      "path": "/Dc/Pv/Power",
+      "type": "float",
+      "name": "PV - DC-coupled power (W)"
+    },
+    "name": "",
+    "onlyChanges": false,
+    "x": 220,
+    "y": 180,
+    "wires": [
+      [
+        "kd02fn"
+      ]
+    ]
+  },
+  {
+    "id": "kd02fn",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "merken pvW",
+    "func": "flow.set('kd_pvW', { w: msg.payload, t: Date.now() });\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 560,
+    "y": 180,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "kd03ein",
+    "type": "victron-input-system",
+    "z": "kd0000000000tab",
+    "service": "com.victronenergy.system/0",
+    "path": "/Ac/Consumption/L1/Power",
+    "serviceObj": {
+      "service": "com.victronenergy.system/0",
+      "name": "Venus system"
+    },
+    "pathObj": {
+      "path": "/Ac/Consumption/L1/Power",
+      "type": "float",
+      "name": "AC Consumption L1 (W)"
+    },
+    "name": "",
+    "onlyChanges": false,
+    "x": 220,
+    "y": 240,
+    "wires": [
+      [
+        "kd03fn"
+      ]
+    ]
+  },
+  {
+    "id": "kd03fn",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "merken hausW",
+    "func": "flow.set('kd_hausW', { w: msg.payload, t: Date.now() });\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 560,
+    "y": 240,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "kd04ein",
+    "type": "victron-input-system",
+    "z": "kd0000000000tab",
+    "service": "com.victronenergy.system/0",
+    "path": "/Ac/Grid/L1/Power",
+    "serviceObj": {
+      "service": "com.victronenergy.system/0",
+      "name": "Venus system"
+    },
+    "pathObj": {
+      "path": "/Ac/Grid/L1/Power",
+      "type": "float",
+      "name": "Grid L1 (W)"
+    },
+    "name": "",
+    "onlyChanges": false,
+    "x": 220,
+    "y": 300,
+    "wires": [
+      [
+        "kd04fn"
+      ]
+    ]
+  },
+  {
+    "id": "kd04fn",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "merken netzW",
+    "func": "flow.set('kd_netzW', { w: msg.payload, t: Date.now() });\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 560,
+    "y": 300,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "kd05ein",
+    "type": "victron-input-system",
+    "z": "kd0000000000tab",
+    "service": "com.victronenergy.system/0",
+    "path": "/Ac/ActiveIn/Source",
+    "serviceObj": {
+      "service": "com.victronenergy.system/0",
+      "name": "Venus system"
+    },
+    "pathObj": {
+      "path": "/Ac/ActiveIn/Source",
+      "type": "enum",
+      "name": "Active input source"
+    },
+    "name": "",
+    "onlyChanges": false,
+    "x": 220,
+    "y": 360,
+    "wires": [
+      [
+        "kd05fn"
+      ]
+    ]
+  },
+  {
+    "id": "kd05fn",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "merken netzQuelle",
+    "func": "const alt = flow.get('kd_netzQuelle');\nif (!alt || (alt.w === 240) !== (msg.payload === 240)) {\n    flow.set('kd_netzSeit', Date.now());\n}\nflow.set('kd_netzQuelle', { w: msg.payload, t: Date.now() });\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 560,
+    "y": 360,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "kd06ein",
+    "type": "victron-input-system",
+    "z": "kd0000000000tab",
+    "service": "com.victronenergy.system/0",
+    "path": "/SystemState/State",
+    "serviceObj": {
+      "service": "com.victronenergy.system/0",
+      "name": "Venus system"
+    },
+    "pathObj": {
+      "path": "/SystemState/State",
+      "type": "enum",
+      "name": "System state"
+    },
+    "name": "",
+    "onlyChanges": false,
+    "x": 220,
+    "y": 420,
+    "wires": [
+      [
+        "kd06fn"
+      ]
+    ]
+  },
+  {
+    "id": "kd06fn",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "merken zustand",
+    "func": "flow.set('kd_zustand', { w: msg.payload, t: Date.now() });\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 560,
+    "y": 420,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "kd07ein",
+    "type": "victron-input-settings",
+    "z": "kd0000000000tab",
+    "service": "com.victronenergy.settings/0",
+    "path": "/Settings/CGwacs/BatteryLife/MinimumSocLimit",
+    "serviceObj": {
+      "service": "com.victronenergy.settings/0",
+      "name": "Venus settings"
+    },
+    "pathObj": {
+      "path": "/Settings/CGwacs/BatteryLife/MinimumSocLimit",
+      "type": "float",
+      "name": "ESS Minimum SoC (unless grid fails) (%)"
+    },
+    "name": "",
+    "onlyChanges": false,
+    "x": 220,
+    "y": 480,
+    "wires": [
+      [
+        "kd07fn"
+      ]
+    ]
+  },
+  {
+    "id": "kd07fn",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "merken minSoc",
+    "func": "flow.set('kd_minSoc', { w: msg.payload, t: Date.now() });\nreturn null;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 560,
+    "y": 480,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "kdhttpin",
+    "type": "http in",
+    "z": "kd0000000000tab",
+    "name": "GET /kindledash/werte",
+    "url": "/kindledash/werte",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 200,
+    "y": 580,
+    "wires": [
+      [
+        "kdantwort"
+      ]
+    ]
+  },
+  {
+    "id": "kdantwort",
+    "type": "function",
+    "z": "kd0000000000tab",
+    "name": "Werte als JSON",
+    "func": "const schluessel = [\"soc\", \"akkuW\", \"pvW\", \"hausW\", \"netzW\", \"netzQuelle\", \"zustand\", \"minSoc\"];\nconst out = { kindledash: 1, zeit: Date.now() };\nlet neuste = 0;\nfor (const k of schluessel) {\n    const v = flow.get('kd_' + k);\n    if (v && v.w !== null && v.w !== undefined) { out[k] = v.w; neuste = Math.max(neuste, v.t); }\n}\n// 240 heißt: kein Netz am AC-Eingang (Wechselrichterbetrieb)\nif (out.netzQuelle !== undefined) { out.netz = out.netzQuelle === 240 ? 'aus' : 'ein'; }\nout.netzSeit = flow.get('kd_netzSeit') || null;\nout.alter = neuste ? Math.round((Date.now() - neuste) / 1000) : null;\nmsg.payload = out;\nmsg.headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 460,
+    "y": 580,
+    "wires": [
+      [
+        "kdhttpout"
+      ]
+    ]
+  },
+  {
+    "id": "kdhttpout",
+    "type": "http response",
+    "z": "kd0000000000tab",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 680,
+    "y": 580,
+    "wires": []
+  }
+]

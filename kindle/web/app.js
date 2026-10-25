@@ -7,16 +7,22 @@
 
   var AKKU_KWH = 4.8;
   var LADELEISTUNG_W = 1800;
-  // Untergrenzen fürs Entladen: im Netzbetrieb hält ESS die Mindestladung,
-  // bei Stromausfall läuft der Akku bis zur Abschaltung. Später vom GX lesen.
+  // Untergrenzen fürs Entladen: im Netzbetrieb hält ESS die Mindestladung (der GX
+  // meldet sie, 70 % gilt nur ohne Meldung), ohne Netz läuft der Akku bis zur Abschaltung.
   var MIN_SOC_NETZ = 70;
   var MIN_SOC_AUSFALL = 10;
+
+  // Der Dienst auf dem Kindle (dienst.sh) legt die Werte vom GX hier ab
+  var WERTE_DATEI = "file:///tmp/kindledash/werte.js";
+  // Werte gelten als veraltet, wenn der Dienst so lange nichts geholt hat oder
+  // der GX so lange keine neuen Messwerte hatte (Sekunden)
+  var WERTE_HOECHSTALTER = 180;
 
   // Standort und Anlage aus dem Einrichtungsassistenten. Die Vorgaben passen zur
   // Anlage in Hamm, nur die Modulleistung ist geschätzt (Typenschild offen).
   var ANLAGE_VORGABE = {
     ort: "Hamm", region: "Nordrhein-Westfalen", lat: 51.68, lon: 7.82,
-    module: 3, wp: 400, neigung: 35, richtung: "S", gx: "192.168.178.140"
+    module: 3, wp: 400, neigung: 35, richtung: "S", netzAngeschlossen: false
   };
   var WIRKUNGSGRAD = 0.8;
   var WETTER_MINUTEN = 30;
@@ -33,16 +39,10 @@
   var MONATE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
     "August", "September", "Oktober", "November", "Dezember"];
 
-  // Anlagenwerte sind noch Beispiele, später vom GX (Node-RED)
-  var BEISPIEL = {
-    normal: { soc: 78, akkuW: 120, pvW: 420, hausW: 290 },
-    netzausfall: { soc: 78, akkuW: -290, pvW: 0, hausW: 290 }
-  };
-  var daten = {
-    soc: 78, akkuW: 120, pvW: 420, hausW: 290,
-    stromausfallSeit: "14:05",
-    letzteWerte: "14:12"
-  };
+  // Was gerade angezeigt wird, aus der Anlage oder aus der Demo
+  var daten = { soc: 0, akkuW: 0, pvW: 0, hausW: 0, netz: null, netzSeit: null, minSoc: null };
+  var werte = { letzte: null, letzteFrisch: 0, gx: "", fehler: "Dienst läuft nicht" };
+  var demo = null;
 
   // Wetter und Prognose von Open-Meteo, aufbereitet von prognoseAufbereiten()
   var prognose = null;
@@ -62,20 +62,26 @@
   };
   function wetterCode(c) { return WETTER[c] || ["wolke", ""]; }
 
-  var einstellungen = { ausrichtung: "hoch", zustand: "normal" };
+  // quelle: "anlage", "demo" oder "demo-ausfall"; takt in Minuten
+  var einstellungen = { ausrichtung: "hoch", quelle: "anlage", takt: 1 };
   var netzladung = false;
+  var oeffneLaden = false;
 
   function $(id) { return document.getElementById(id); }
 
   function laden() {
     try {
-      var s = JSON.parse(localStorage.getItem("kindledash.einstellungen") || "{}");
-      if (s.ausrichtung) { einstellungen.ausrichtung = s.ausrichtung; }
+      var s = JSON.parse(localStorage.getItem("kindledash.einstellungen") || "{}"), k;
+      for (k in einstellungen) { if (einstellungen.hasOwnProperty(k) && s[k] !== undefined) { einstellungen[k] = s[k]; } }
     } catch (e) { /* ohne Speicher gelten die Vorgaben */ }
     var m = /[#&](hoch|quer-links|quer-rechts)/.exec(location.hash);
     if (m) { einstellungen.ausrichtung = m[1]; }
+    // Testansichten am PC: #normal und #netzausfall zeigen die Demo, #offline die Anlage ohne Werte
     var z = /[#&](normal|netzausfall|offline|laden)/.exec(location.hash);
-    if (z) { einstellungen.zustand = z[1]; }
+    if (z) {
+      einstellungen.quelle = { normal: "demo", laden: "demo", netzausfall: "demo-ausfall", offline: "anlage" }[z[1]];
+      oeffneLaden = z[1] === "laden";
+    }
 
     anlage = kopie(ANLAGE_VORGABE);
     try {
@@ -88,7 +94,7 @@
 
   function speichern() {
     try {
-      localStorage.setItem("kindledash.einstellungen", JSON.stringify({ ausrichtung: einstellungen.ausrichtung }));
+      localStorage.setItem("kindledash.einstellungen", JSON.stringify(einstellungen));
     } catch (e) { /* nicht kritisch */ }
   }
 
@@ -103,8 +109,15 @@
     return einstellungen.ausrichtung === "hoch" ? "hoch" : "quer";
   }
 
+  // normal, netzausfall (Netz weg, obwohl angeschlossen), insel (ohne Netzanschluss) oder offline
+  function zustand() {
+    if (einstellungen.quelle === "anlage" && !werteFrisch()) { return "offline"; }
+    if (daten.netz === "aus") { return anlage.netzAngeschlossen || einstellungen.quelle === "demo-ausfall" ? "netzausfall" : "insel"; }
+    return "normal";
+  }
+
   function koerperKlasse() {
-    var c = [ausrichtung(), einstellungen.zustand === "laden" ? "normal" : einstellungen.zustand];
+    var c = [ausrichtung(), zustand()];
     if (ausrichtung() === "quer" && window.innerWidth < window.innerHeight) {
       c.push("gedreht");
       c.push(einstellungen.ausrichtung === "quer-links" ? "ccw" : "cw");
@@ -120,15 +133,124 @@
     var mm = jetzt.getMinutes();
     $("uhr").innerHTML = jetzt.getHours() + ":" + (mm < 10 ? "0" : "") + mm;
 
-    var z = einstellungen.zustand;
+    var z = zustand();
     if (z === "netzausfall") {
-      $("status").innerHTML = icon("stecker-aus") + "Stromausfall seit " + daten.stromausfallSeit;
+      $("status").innerHTML = icon("stecker-aus") + "Stromausfall" + (daten.netzSeit ? " seit " + uhrzeit(daten.netzSeit) : "");
+    } else if (z === "insel") {
+      $("status").innerHTML = icon("stecker-aus") + "ohne Stromnetz";
     } else if (z === "offline") {
       $("status").innerHTML = icon("wlan-aus") + "keine Verbindung";
     } else {
       $("status").innerHTML = icon("stecker") + "Stromnetz verbunden";
     }
     $("laden-knopf").className = "knopf-icon" + (netzladung ? " aktiv" : "");
+  }
+
+  function uhrzeit(ms) {
+    var d = new Date(ms), m = d.getMinutes();
+    return d.getHours() + ":" + (m < 10 ? "0" : "") + m;
+  }
+
+  // --- Anlagenwerte vom Dienst -----------------------------------------------
+
+  function werteFrisch() {
+    var w = werte.letzte;
+    if (!w || !w.ok) { return false; }
+    if (new Date().getTime() / 1000 - w.geholt > WERTE_HOECHSTALTER) { return false; }
+    return !(w.daten.alter !== null && w.daten.alter > WERTE_HOECHSTALTER);
+  }
+
+  // dienst.sh schreibt kindledashWerte({...}) in eine Datei, die hier als Skript geladen wird
+  window.kindledashWerte = function (w) {
+    werte.letzte = w;
+    werte.gx = w.gx || "";
+    werte.fehler = w.ok ? "" : (w.fehler || "");
+    if (werteFrisch()) {
+      werte.letzteFrisch = new Date().getTime();
+      if (w.daten.netz === "ein" && !anlage.netzAngeschlossen) {
+        // einmal Netz gesehen heißt: die Anlage ist angeschlossen
+        anlage.netzAngeschlossen = true;
+        anlageSpeichern();
+      }
+    }
+  };
+
+  function werteHolen(weiter) {
+    var alt = $("werte-skript"), s = document.createElement("script");
+    if (alt) { alt.parentNode.removeChild(alt); }
+    s.id = "werte-skript";
+    s.src = WERTE_DATEI + "?t=" + new Date().getTime();
+    s.onload = weiter;
+    s.onerror = function () { werte.letzte = null; werte.fehler = "Dienst läuft nicht"; weiter(); };
+    document.body.appendChild(s);
+  }
+
+  function anlageWerte() {
+    var w = werte.letzte && werte.letzte.ok ? werte.letzte.daten : null;
+    if (!w) { return; }
+    daten.soc = Math.round(w.soc || 0);
+    daten.akkuW = Math.round(w.akkuW || 0);
+    daten.pvW = Math.max(0, Math.round(w.pvW || 0));
+    daten.hausW = Math.max(0, Math.round(w.hausW || 0));
+    daten.netz = w.netz || null;
+    daten.netzSeit = w.netzSeit || null;
+    daten.minSoc = typeof w.minSoc === "number" ? w.minSoc : null;
+  }
+
+  // --- Demo ------------------------------------------------------------------
+  // Ein glaubwürdiger Tag: die Sonne folgt der echten Prognose, der Haushalt
+  // schwankt mit gelegentlichen Spitzen, der Akku gleicht aus.
+
+  function demoSonne(jetzt) {
+    var h = jetzt.getHours() + jetzt.getMinutes() / 60, w;
+    if (prognose) {
+      var st = prognose.tage[0].stunden, a = Math.floor(h + 0.5), f = h + 0.5 - a;
+      w = (st[a] || 0) * (1 - f) + (st[a + 1] || 0) * f;
+    } else {
+      w = 600 * Math.exp(-Math.pow(h - 13, 2) / 8);
+    }
+    return Math.max(0, Math.round(w * (0.85 + Math.random() * 0.2)));
+  }
+
+  function demoSchritt() {
+    var jetzt = new Date(), ausfall = einstellungen.quelle === "demo-ausfall";
+    if (!demo || demo.ausfall !== ausfall) {
+      demo = { soc: 78, zeit: jetzt.getTime(), ausfall: ausfall, seit: jetzt.getTime() - 35 * 60000 };
+    }
+    var stunden = Math.min(0.5, (jetzt.getTime() - demo.zeit) / 3600000);
+    demo.zeit = jetzt.getTime();
+    var h = jetzt.getHours();
+    var haus = 180 + (h >= 6 && h <= 22 ? 140 : 0) + Math.round(Math.random() * 90);
+    if (Math.random() < 0.08) { haus += 1200 + Math.round(Math.random() * 800); }
+    var pv = demoSonne(jetzt), akku = pv - haus, grenze = ausfall ? MIN_SOC_AUSFALL : MIN_SOC_NETZ;
+    if (netzladung && !ausfall) { akku = LADELEISTUNG_W; }
+    if (akku > 0 && demo.soc >= 100) { akku = 0; pv = Math.min(pv, haus); }
+    if (akku < 0 && demo.soc <= grenze && !ausfall) { akku = 0; }
+    demo.soc = Math.max(0, Math.min(100, demo.soc + akku * stunden / (AKKU_KWH * 1000) * 100));
+    if (netzladung && demo.soc >= 100) { netzladung = false; }
+    daten.soc = Math.round(demo.soc);
+    daten.akkuW = Math.round(akku);
+    daten.pvW = pv;
+    daten.hausW = haus;
+    daten.netz = ausfall ? "aus" : "ein";
+    daten.netzSeit = ausfall ? demo.seit : null;
+    daten.minSoc = MIN_SOC_NETZ;
+  }
+
+  // Ein Takt: neue Werte holen (Anlage) oder weiterrechnen (Demo), dann zeichnen
+  function takt() {
+    if (einstellungen.quelle === "anlage") {
+      werteHolen(function () { anlageWerte(); alles(); });
+    } else {
+      demoSchritt();
+      alles();
+    }
+  }
+
+  var taktUhr = null;
+  function taktStarten() {
+    if (taktUhr) { clearInterval(taktUhr); }
+    taktUhr = setInterval(takt, einstellungen.takt * 60000);
   }
 
   // Grob reicht: ab 2 Stunden ganze Stunden, darunter Minuten in Zehnern
@@ -150,7 +272,7 @@
       return "voll in etwa " + dauer(kwh * 1000 / w);
     }
     if (w < -30) {
-      var grenze = einstellungen.zustand === "netzausfall" ? MIN_SOC_AUSFALL : MIN_SOC_NETZ;
+      var grenze = daten.netz === "aus" ? MIN_SOC_AUSFALL : (daten.minSoc !== null ? daten.minSoc : MIN_SOC_NETZ);
       kwh = (daten.soc - grenze) / 100 * AKKU_KWH;
       if (kwh <= 0) { return "Reserve erreicht"; }
       return "noch etwa " + dauer(kwh * 1000 / -w);
@@ -159,8 +281,6 @@
   }
 
   function hauptwerte() {
-    var b = BEISPIEL[einstellungen.zustand === "netzausfall" ? "netzausfall" : "normal"], k;
-    for (k in b) { if (b.hasOwnProperty(k)) { daten[k] = b[k]; } }
     $("soc").innerHTML = daten.soc + "<span>%</span>";
     var zellen = "", i, voll = daten.soc / 10;
     for (i = 0; i < 10; i++) {
@@ -175,9 +295,15 @@
       $("richtung").innerHTML = icon("pfeil-runter") + "entlädt mit " + (-daten.akkuW) + " W";
     }
     $("restzeit").innerHTML = restzeit();
+    // ab vier Stellen kleiner setzen, damit nichts über den Rand läuft
     $("pv").innerHTML = daten.pvW + "<span>W</span>";
+    $("pv").className = "wert" + (daten.pvW >= 1000 ? " lang" : "");
     $("haus").innerHTML = daten.hausW + "<span>W</span>";
-    $("letzte-werte").innerHTML = "letzte Werte um " + daten.letzteWerte;
+    $("haus").className = "wert" + (daten.hausW >= 1000 ? " lang" : "");
+    var grund = werte.fehler === "kein GX gefunden" ? "Kein GX im WLAN gefunden" :
+      (werte.fehler === "Dienst läuft nicht" ? "Der Dienst auf dem Kindle läuft nicht" :
+        (werte.gx ? "GX " + werte.gx + " antwortet nicht" : ""));
+    $("letzte-werte").innerHTML = (werte.letzteFrisch ? "letzte Werte um " + uhrzeit(werte.letzteFrisch) + "<br>" : "") + grund;
   }
 
   // --- Wetter und Prognose ---------------------------------------------------
@@ -315,16 +441,20 @@
     $("laden-soc").innerHTML = daten.soc + " %";
     var minuten = Math.round((100 - daten.soc) / 100 * AKKU_KWH * 1000 / LADELEISTUNG_W * 60 / 5) * 5;
     $("laden-dauer").innerHTML = minuten + " Minuten";
-    $("laden-start").innerHTML = netzladung ? "Vollladen beenden" : "Jetzt vollladen";
+    // Laden aus dem Netz schreibt an der Anlage und ist noch nicht freigegeben, nur die Demo spielt es durch
+    var frei = einstellungen.quelle !== "anlage";
+    $("laden-start").innerHTML = !frei ? "Noch nicht freigegeben" : (netzladung ? "Vollladen beenden" : "Jetzt vollladen");
+    $("laden-start").className = "knopf primaer" + (frei ? "" : " gesperrt");
   }
 
   function segmente() {
-    var gruppen = ["ausrichtung", "zustand"], g, el, kinder, i;
+    var gruppen = ["ausrichtung", "quelle", "takt"], g, el, kinder, i;
     for (g = 0; g < gruppen.length; g++) {
       el = $(gruppen[g]);
       kinder = el.getElementsByTagName("div");
       for (i = 0; i < kinder.length; i++) {
-        kinder[i].className = kinder[i].getAttribute("data-wert") === einstellungen[gruppen[g]] ? "an" : "";
+        kinder[i].className = (kinder[i].innerHTML.indexOf("<br") >= 0 ? "zwei " : "") +
+          (kinder[i].getAttribute("data-wert") === String(einstellungen[gruppen[g]]) ? "an" : "");
       }
     }
   }
@@ -355,7 +485,7 @@
   // --- Einrichtungsassistent -------------------------------------------------
 
   var SCHRITTE = ["standort", "module", "neigung", "richtung", "gx", "uebersicht"];
-  var as = { schritt: 0, entwurf: null, suche: "", treffer: null, suchStatus: "", gxStatus: "" };
+  var as = { schritt: 0, entwurf: null, suche: "", treffer: null, suchStatus: "" };
 
   function assistentOeffnen() {
     schliesseAlle();
@@ -364,7 +494,7 @@
     as.suche = "";
     as.treffer = null;
     as.suchStatus = "";
-    as.gxStatus = "";
+    if (as.entwurf.netzAngeschlossen === undefined) { as.entwurf.netzAngeschlossen = false; }
     koerperKlasse();
     assistent();
   }
@@ -440,22 +570,28 @@
         for (k = 0; k < 3; k++) {
           c = reihen[r][k];
           html += c ? '<div data-as="richtung" data-wert="' + c + '"' + (e.richtung === c ? ' class="an"' : "") + "><b>" + c + "</b><span>" +
-            RICHTUNGEN[c][1] + "</span></div>" : '<div class="mitte">' + icon("haus") + "</div>";
+            RICHTUNGEN[c][1] + "</span></div>" : '<div class="mitte">' + icon("haus-symbol") + "</div>";
         }
       }
       html += "</div>";
     } else if (s === "gx") {
-      html = "<h2>Unter welcher IP-Adresse ist der GX erreichbar?</h2>" +
-        '<div class="eingabe-zeile"><input class="eingabe" id="as-gx" type="text" value="' + esc(e.gx) + '">' +
-        '<div class="knopf" data-as="gx-pruefen">Prüfen</div></div>' +
-        '<div class="hinweis-zeile" id="as-gx-status">' + as.gxStatus + "</div>";
+      // Den GX sucht der Dienst selbst im WLAN, hier steht nur, was er gefunden hat
+      var gefunden = werte.letzte && werte.letzte.ok;
+      html = "<h2>Ist der Wechselrichter am Stromnetz angeschlossen?</h2>" +
+        '<div class="segment gross" style="margin-top:40px">' +
+        '<div data-as="netz-ja"' + (e.netzAngeschlossen ? ' class="an"' : "") + ">Ja</div>" +
+        '<div data-as="netz-nein"' + (!e.netzAngeschlossen ? ' class="an"' : "") + ">Noch nicht</div></div>" +
+        '<div class="gx-status"><span class="label">Verbindung zum GX</span><b>' +
+        (gefunden ? icon("haken") + " verbunden mit " + esc(werte.gx) :
+          (werte.fehler === "kein GX gefunden" ? "wird im WLAN gesucht" :
+            (werte.gx ? esc(werte.gx) + " antwortet nicht" : "Dienst läuft nicht"))) + "</b></div>";
     } else {
       html = "<h2>Alles richtig?</h2>" + '<div class="uebersicht">' +
         "<div><span>Ort</span><b>" + esc(e.ort) + "</b></div>" +
         "<div><span>Module</span><b>" + e.module + " × " + e.wp + " W = " + komma(kwp(e), 2) + " kWp</b></div>" +
         "<div><span>Neigung</span><b>" + e.neigung + "°</b></div>" +
         "<div><span>Ausrichtung</span><b>" + RICHTUNGEN[e.richtung][1] + "</b></div>" +
-        "<div><span>GX</span><b>" + esc(e.gx) + "</b></div></div>";
+        "<div><span>Stromnetz</span><b>" + (e.netzAngeschlossen ? "angeschlossen" : "noch nicht angeschlossen") + "</b></div></div>";
     }
     $("as-inhalt").innerHTML = html;
     $("as-zurueck").innerHTML = as.schritt === 0 ? "Abbrechen" : "Zurück";
@@ -463,9 +599,12 @@
   }
 
   function eingabenUebernehmen() {
-    var s = $("as-suche"), g = $("as-gx");
+    var s = $("as-suche");
     if (s) { as.suche = s.value; }
-    if (g) { as.entwurf.gx = g.value.replace(/\s/g, ""); }
+  }
+
+  function anlageSpeichern() {
+    try { localStorage.setItem("kindledash.anlage", JSON.stringify(anlage)); } catch (e) { /* nur bis zum Neustart */ }
   }
 
   // Die Postleitzahlen liegen als plz.js auf dem Kindle (GeoNames). Sie werden
@@ -520,25 +659,6 @@
     x.send();
   }
 
-  // Der GX liefert die Werte später über Node-RED, der Endpunkt erlaubt Abfragen von der App
-  function gxPruefen() {
-    eingabenUebernehmen();
-    as.gxStatus = "Prüfe " + esc(as.entwurf.gx);
-    $("as-gx-status").innerHTML = as.gxStatus;
-    var x = new XMLHttpRequest(), fertig = false;
-    function ergebnis(ok) {
-      if (fertig) { return; }
-      fertig = true;
-      as.gxStatus = ok ? icon("haken") + " GX antwortet" : "Keine Antwort vom GX";
-      if (as.entwurf && SCHRITTE[as.schritt] === "gx") { $("as-gx-status").innerHTML = as.gxStatus; }
-    }
-    x.open("GET", "http://" + as.entwurf.gx + ":1880/kindledash/werte", true);
-    x.onreadystatechange = function () { if (x.readyState === 4) { ergebnis(x.status === 200); } };
-    // der alte Browser kennt kein xhr.timeout
-    setTimeout(function () { if (!fertig) { x.abort(); ergebnis(false); } }, 8000);
-    x.send();
-  }
-
   function assistentAktion(a, el) {
     var e = as.entwurf;
     if (a === "suchen") { ortSuchen(); return; }
@@ -547,7 +667,8 @@
       e.ort = t.name; e.region = t.admin1 || ""; e.lat = t.latitude; e.lon = t.longitude;
       eingabenUebernehmen(); assistent(); return;
     }
-    if (a === "gx-pruefen") { gxPruefen(); return; }
+    if (a === "netz-ja") { e.netzAngeschlossen = true; }
+    if (a === "netz-nein") { e.netzAngeschlossen = false; }
     if (a === "richtung") { e.richtung = el.getAttribute("data-wert"); assistent(); return; }
     if (a === "anzahl-minus") { e.module = Math.max(1, e.module - 1); }
     if (a === "anzahl-plus") { e.module = Math.min(60, e.module + 1); }
@@ -563,7 +684,7 @@
     if (as.schritt < SCHRITTE.length - 1) { as.schritt++; assistent(); return; }
     anlage = kopie(as.entwurf);
     eingerichtet = true;
-    try { localStorage.setItem("kindledash.anlage", JSON.stringify(anlage)); } catch (e) { /* nur bis zum Neustart */ }
+    anlageSpeichern();
     prognose = null;
     assistentSchliessen();
     alles();
@@ -596,12 +717,17 @@
       if (t.id === "laden-knopf") { oeffne("dialog-laden"); return; }
       if (t.id === "einstellungen-knopf") { oeffne("dialog-einstellungen"); return; }
       if (t.id === "beenden") { zumKindle(); return; }
-      if (t.id === "laden-start") { netzladung = !netzladung; schliesseAlle(); alles(); return; }
+      if (t.id === "laden-start") {
+        if (einstellungen.quelle !== "anlage") { netzladung = !netzladung; schliesseAlle(); takt(); }
+        return;
+      }
       if (t.id === "schleier" || t.getAttribute("data-schliessen")) { schliesseAlle(); return; }
       if (t.getAttribute("data-wert") && t.parentNode && t.parentNode.className === "segment") {
         var gruppe = t.parentNode.id, wert = t.getAttribute("data-wert");
-        einstellungen[gruppe] = wert;
-        if (gruppe === "ausrichtung") { speichern(); }
+        einstellungen[gruppe] = gruppe === "takt" ? +wert : wert;
+        speichern();
+        if (gruppe === "takt") { taktStarten(); }
+        if (gruppe === "quelle") { netzladung = false; takt(); }
         alles();
         segmente();
         koerperKlasse();
@@ -614,18 +740,22 @@
   laden();
   wetterAusSpeicher();
   alles();
-  if (einstellungen.zustand === "laden") { oeffne("dialog-laden"); }
+  takt();
+  taktStarten();
+  if (oeffneLaden) { oeffne("dialog-laden"); }
   document.addEventListener("click", klick, false);
   document.addEventListener("keyup", function (e) {
     if (e.keyCode === 13 && e.target && e.target.id === "as-suche") { ortSuchen(); }
   }, false);
   // Beim ersten Start fragt der Assistent die Anlage ab. #assistent-3 öffnet ihn zum Testen bei Schritt 3.
   var at = /[#&]assistent-?(\d)?/.exec(location.hash);
-  if (!eingerichtet || at) {
+  var testansicht = /[#&](normal|netzausfall|offline|laden)/.test(location.hash);
+  if ((!eingerichtet && !testansicht) || at) {
     assistentOeffnen();
     if (at && at[1]) { as.schritt = Math.min(SCHRITTE.length, +at[1]) - 1; assistent(); }
   }
-  setInterval(kopf, 30000);
+  // Uhr jede volle Minute, öfter zeichnet E-Ink nur Geisterbilder
+  setTimeout(function () { kopf(); setInterval(kopf, 60000); }, (60 - new Date().getSeconds()) * 1000);
   setInterval(kurve, 10 * 60000);
   wetterHolen();
   setInterval(wetterHolen, WETTER_MINUTEN * 60000);
