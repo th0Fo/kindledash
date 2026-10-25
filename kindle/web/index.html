@@ -120,8 +120,12 @@
   <div id="dialog-update" class="dialog">
     <h2><svg class="i"><use xlink:href="#pfeil-runter"/></svg>Update</h2>
     <p id="update-text"></p>
+    <div id="update-fortschritt">
+      <div class="balken"><i id="update-balken"></i></div>
+      <div class="balken-zeile"><span id="update-schritt"></span><b id="update-prozent"></b></div>
+    </div>
     <div class="knoepfe">
-      <div class="knopf" data-schliessen="1">Abbrechen</div>
+      <div class="knopf" data-schliessen="1" id="update-schliessen">Abbrechen</div>
       <div class="knopf primaer" id="update-start">Installieren</div>
     </div>
   </div>

@@ -15,7 +15,11 @@ TMP=/tmp/kindledash
 STATUS=$TMP/update-status.txt
 mkdir -p $TMP
 
-status() { echo "$*" > $STATUS; echo "$(date '+%d.%m. %H:%M:%S') update: $*" >> $TMP/dienst.log; }
+# Stand für die App, Felder durch | getrennt:
+#   laeuft|<Prozent>|<Text>   fertig|<Version>|<Uhrzeit in Sekunden>   fehler|<Text>   geprueft
+status() { echo "$*" > $STATUS.neu; mv $STATUS.neu $STATUS; echo "$(date '+%d.%m. %H:%M:%S') update: $*" >> $TMP/dienst.log; }
+schritt() { status "laeuft|$1|$2"; }
+fehler() { status "fehler|$1"; }
 
 neuestes() {
     # gibt "tag url" des neuesten Release aus
@@ -26,29 +30,49 @@ neuestes() {
 }
 
 pruefen() {
-    n=$(neuestes) || { status "fehler: GitHub nicht erreichbar"; return 1; }
+    n=$(neuestes) || { fehler "GitHub nicht erreichbar"; return 1; }
     echo "${n%% *}" > $TMP/neu.txt
     status "geprueft"
 }
 
+# Lädt $1 nach $2 und meldet dabei den Fortschritt zwischen 5 und 65 Prozent.
+# GitHub nennt für Quellarchive keine Größe, also gilt die Größe vom letzten Mal.
+laden_mit_fortschritt() {
+    erwartet=$(cat $VZ/update-groesse.txt 2>/dev/null)
+    [ -n "$erwartet" ] && [ "$erwartet" -gt 0 ] 2>/dev/null || erwartet=900000
+    curl -s -L -m 180 -o "$2" "$1" &
+    cpid=$!
+    while kill -0 $cpid 2>/dev/null; do
+        groesse=$(wc -c < "$2" 2>/dev/null || echo 0)
+        p=$((5 + 60 * groesse / erwartet)); [ $p -gt 65 ] && p=65
+        schritt $p "Lade $3 ($((groesse / 1024)) KB)"
+        sleep 1
+    done
+    wait $cpid || return 1
+    wc -c < "$2" > $VZ/update-groesse.txt
+}
+
 installieren() {
-    status "laeuft: lade"
-    n=$(neuestes) || { status "fehler: GitHub nicht erreichbar"; return 1; }
+    schritt 2 "Suche das neueste Release"
+    n=$(neuestes) || { fehler "GitHub nicht erreichbar"; return 1; }
     tag=${n%% *}; url=${n#* }
     rm -rf $TMP/update $TMP/update.tgz
     mkdir -p $TMP/update
-    curl -s -L -m 120 -o $TMP/update.tgz "$url" || { status "fehler: Download abgebrochen"; return 1; }
-    tar xzf $TMP/update.tgz -C $TMP/update || { status "fehler: Archiv kaputt"; return 1; }
+    laden_mit_fortschritt "$url" $TMP/update.tgz "$tag" || { fehler "Download abgebrochen"; return 1; }
+    schritt 72 "Entpacke $tag"
+    tar xzf $TMP/update.tgz -C $TMP/update || { fehler "Archiv kaputt"; return 1; }
+    schritt 78 "Prüfe die Dateien"
     neu=$(ls -d $TMP/update/*/kindle 2>/dev/null | head -1)
     if [ ! -f "$neu/web/index.html" ] || [ ! -f "$neu/web/app.js" ] || [ ! -f "$neu/dienst.sh" ]; then
-        status "fehler: Archiv unvollständig"; return 1
+        fehler "Archiv unvollständig"; return 1
     fi
 
-    status "laeuft: spiele ein"
+    schritt 84 "Sichere den bisherigen Stand"
     rm -rf $VZ/vorher && mkdir -p $VZ/vorher
     cp -r $VZ/web $VZ/vorher/web
     for f in $VZ/*.sh $VZ/*.conf $VZ/version.txt; do [ -f "$f" ] && cp "$f" $VZ/vorher/; done
 
+    schritt 92 "Spiele $tag ein"
     cp $neu/web/* $VZ/web/
     for f in dienst.sh aktualisieren.sh befehl.sh installieren.sh kindledash.conf kindledash-starten.sh \
              kindledash-zuruecksetzen.sh ssh-zugang.sh; do
@@ -58,7 +82,10 @@ installieren() {
     echo "$tag" > $TMP/neu.txt
     rm -rf $TMP/update $TMP/update.tgz
 
-    status "fertig: $tag"
+    schritt 97 "Starte das Dashboard neu"
+    sleep 2
+    # die neu gestartete App liest das und meldet das Ergebnis
+    status "fertig|$tag|$(date +%s)"
     neustart
 }
 

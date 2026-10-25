@@ -238,11 +238,13 @@
   }
 
   // Ein Takt: neue Werte holen (Anlage) oder weiterrechnen (Demo), dann zeichnen
+  var ersterTakt = true;
   function takt() {
     // auch in der Demo holen, die Datei trägt Version und Update-Stand
     werteHolen(function () {
       if (einstellungen.quelle === "anlage") { anlageWerte(); } else { demoSchritt(); }
       alles();
+      if (ersterTakt) { ersterTakt = false; updateErgebnisMelden(); }
       if ($("dialog-einstellungen").className.indexOf("offen") >= 0) { versionKnopf(); }
       if ($("dialog-update").className.indexOf("offen") >= 0) { dialogUpdate(); }
     });
@@ -284,21 +286,97 @@
     }
   }
 
+  // Update-Stand aus dem Dienst lesen. Neues Format: laeuft|50|Text, fertig|v1.0.2|Sekunden,
+  // fehler|Text. Ältere Fassungen schrieben "laeuft: lade", "fertig: v1.0.1", "fehler: Text".
+  function updateZustand() {
+    var u = (stand() || {}).update || "", t = u.split("|"), m;
+    if (t.length > 1) {
+      if (t[0] === "laeuft") { return { art: "laeuft", prozent: +t[1] || 0, text: t[2] || "" }; }
+      if (t[0] === "fertig") { return { art: "fertig", version: t[1], zeit: +t[2] || 0 }; }
+      if (t[0] === "fehler") { return { art: "fehler", text: t[1] }; }
+    }
+    m = /^(laeuft|fertig|fehler): ?(.*)$/.exec(u);
+    if (m) { return { art: m[1], prozent: 50, text: m[2], version: m[2], zeit: 0 }; }
+    return { art: u ? "geprueft" : "" };
+  }
+
+  var updateAbfrage = null, updateStartZeit = 0, updateErgebnis = false;
+
+  // Während des Updates den Stand jede Sekunde direkt beim Dienst abfragen,
+  // werte.js wird nur alle 30 Sekunden neu geschrieben
+  function updateVerfolgen() {
+    if (updateAbfrage) { return; }
+    updateAbfrage = setInterval(function () {
+      var x = new XMLHttpRequest();
+      x.open("GET", BEFEHL_URL + "/status", true);
+      x.onreadystatechange = function () {
+        if (x.readyState !== 4 || x.status !== 200) { return; }
+        try {
+          var a = JSON.parse(x.responseText);
+          if (werte.letzte) { werte.letzte.update = a.update; werte.letzte.version = a.version; werte.letzte.neu = a.neu; }
+        } catch (e) { return; }
+        dialogUpdate();
+      };
+      x.send();
+    }, 1000);
+  }
+
+  function updateNichtVerfolgen() {
+    if (updateAbfrage) { clearInterval(updateAbfrage); updateAbfrage = null; }
+  }
+
   function dialogUpdate() {
-    var s = stand() || { version: "", neu: "", update: "" }, t, knopf = $("update-start");
-    if (!updateGestartet && !updateDa() && s.update.indexOf("fehler") !== 0) {
+    var s = stand() || { version: "", neu: "", update: "" }, z = updateZustand(), t, prozent = -1, schrittText = "";
+    var start = $("update-start"), schliessen = $("update-schliessen");
+    var laeuft = z.art === "laeuft" || (updateGestartet && z.art !== "fehler");
+    // kommt nach 30 Sekunden keine Meldung vom Dienst, hat der Start nicht geklappt
+    if (updateGestartet && z.art !== "laeuft" && z.art !== "fehler" && new Date().getTime() - updateStartZeit > 30000) {
+      z = { art: "fehler", text: "der Dienst hat das Update nicht gestartet" };
+      laeuft = false;
+    }
+    if (updateErgebnis) {
+      t = "Update installiert. Jetzt läuft Version " + esc(s.version) + ".";
+      prozent = 100; schrittText = "Fertig";
+    } else if (laeuft) {
+      t = "Das Update wird installiert. Das Dashboard startet danach von selbst neu, das dauert etwa eine halbe Minute.";
+      prozent = z.art === "laeuft" ? z.prozent : 1;
+      schrittText = z.art === "laeuft" ? z.text : "Starte das Update";
+    } else if (z.art === "fehler") {
+      t = "Das Update hat nicht geklappt: " + esc(z.text) + ". Version " + esc(s.version) + " läuft weiter.";
+    } else if (!updateDa()) {
       t = "Kein Update verfügbar. Installiert ist " + esc(s.version || "eine unbekannte Version") + ".";
-    } else if (updateGestartet || s.update.indexOf("laeuft") === 0) {
-      t = "Das Update wird installiert. Das Dashboard startet danach von selbst neu.";
-    } else if (s.update.indexOf("fehler") === 0) {
-      t = "Das letzte Update hat nicht geklappt (" + esc(s.update.substr(8)) + "). Version " + esc(s.version) + " läuft weiter.";
     } else {
       t = "Version " + esc(s.neu) + " ist verfügbar, installiert ist " + esc(s.version) +
         ". Das Dashboard lädt sie von GitHub und startet danach neu. Die Einstellungen bleiben erhalten.";
     }
     $("update-text").innerHTML = t;
-    knopf.className = "knopf primaer" + (updateGestartet ? " gesperrt" : "");
-    knopf.innerHTML = updateGestartet ? "Läuft" : "Installieren";
+    $("update-fortschritt").className = prozent >= 0 ? "an" : "";
+    if (prozent >= 0) {
+      $("update-balken").style.width = Math.max(0, Math.min(100, prozent)) + "%";
+      $("update-prozent").innerHTML = Math.round(prozent) + " %";
+      $("update-schritt").innerHTML = esc(schrittText);
+    }
+    if (laeuft) { updateVerfolgen(); } else { updateNichtVerfolgen(); }
+    if (z.art === "fehler") { updateGestartet = false; }
+    // während des Updates gibt es nichts zu tun, danach nur noch OK
+    start.className = "knopf primaer" + (laeuft ? " weg" : (updateErgebnis || !updateDa() ? " weg" : ""));
+    start.innerHTML = z.art === "fehler" ? "Nochmal versuchen" : "Installieren";
+    schliessen.innerHTML = laeuft ? "Ausblenden" : (updateErgebnis || !updateDa() ? "OK" : "Abbrechen");
+    schliessen.className = "knopf" + (updateErgebnis || (!laeuft && !updateDa()) ? " primaer" : "");
+  }
+
+  // Nach dem Neustart durch ein Update einmal melden, dass es geklappt hat
+  function updateErgebnisMelden() {
+    var z = updateZustand(), schluessel;
+    if (z.art !== "fertig" || !z.zeit) { return; }
+    if (new Date().getTime() / 1000 - z.zeit > 600) { return; }
+    schluessel = z.version + "|" + z.zeit;
+    try {
+      if (localStorage.getItem("kindledash.updateGemeldet") === schluessel) { return; }
+      localStorage.setItem("kindledash.updateGemeldet", schluessel);
+    } catch (e) { /* dann eben jedes Mal in den zehn Minuten */ }
+    updateErgebnis = true;
+    oeffne("dialog-update");
   }
 
   var taktUhr = null;
@@ -524,6 +602,8 @@
 
   function schliesseAlle() {
     var d = document.querySelectorAll(".dialog"), i;
+    updateNichtVerfolgen();
+    updateErgebnis = false;
     for (i = 0; i < d.length; i++) { d[i].className = "dialog"; }
     koerperKlasse();
   }
@@ -780,7 +860,15 @@
         return;
       }
       if (t.id === "update-start") {
-        if (!updateGestartet) { updateGestartet = true; dialogUpdate(); befehl("/aktualisieren"); }
+        if (!updateGestartet) {
+          updateGestartet = true;
+          updateStartZeit = new Date().getTime();
+          if (werte.letzte) { werte.letzte.update = "laeuft|1|Starte das Update"; }
+          dialogUpdate();
+          befehl("/aktualisieren", function (ok) {
+            if (!ok && werte.letzte) { werte.letzte.update = "fehler|der Dienst antwortet nicht"; dialogUpdate(); }
+          });
+        }
         return;
       }
       if (t.id === "laden-start") {
