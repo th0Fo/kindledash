@@ -239,12 +239,64 @@
 
   // Ein Takt: neue Werte holen (Anlage) oder weiterrechnen (Demo), dann zeichnen
   function takt() {
-    if (einstellungen.quelle === "anlage") {
-      werteHolen(function () { anlageWerte(); alles(); });
-    } else {
-      demoSchritt();
+    // auch in der Demo holen, die Datei trägt Version und Update-Stand
+    werteHolen(function () {
+      if (einstellungen.quelle === "anlage") { anlageWerte(); } else { demoSchritt(); }
       alles();
+      if ($("dialog-einstellungen").className.indexOf("offen") >= 0) { versionKnopf(); }
+      if ($("dialog-update").className.indexOf("offen") >= 0) { dialogUpdate(); }
+    });
+  }
+
+  // --- Updates ----------------------------------------------------------------
+  // Der Dienst prüft alle sechs Stunden GitHub und meldet Version und Update in werte.js.
+  // Befehle gehen an befehl.sh, das nur auf dem Kindle selbst lauscht.
+
+  var BEFEHL_URL = "http://127.0.0.1:8737";
+  var updateGestartet = false;
+
+  function stand() {
+    var w = werte.letzte;
+    return w ? { version: w.version || "", neu: w.neu || "", update: w.update || "" } : null;
+  }
+
+  function updateDa() {
+    var s = stand();
+    return !!(s && s.neu && s.neu !== s.version);
+  }
+
+  function befehl(pfad, weiter) {
+    var x = new XMLHttpRequest();
+    x.open("GET", BEFEHL_URL + pfad, true);
+    x.onreadystatechange = function () { if (x.readyState === 4 && weiter) { weiter(x.status === 200); } };
+    x.send();
+  }
+
+  function versionKnopf() {
+    var s = stand(), k = $("version-knopf");
+    if (!s) { k.innerHTML = ""; return; }
+    if (updateDa()) {
+      k.innerHTML = "Update auf " + esc(s.neu);
+      k.className = "version neu";
+    } else {
+      k.innerHTML = s.update === "laeuft: pruefe" ? "wird geprüft" : "Version " + esc(s.version || "unbekannt");
+      k.className = "version";
     }
+  }
+
+  function dialogUpdate() {
+    var s = stand() || {}, t, knopf = $("update-start");
+    if (updateGestartet || s.update.indexOf("laeuft") === 0) {
+      t = "Das Update wird installiert. Das Dashboard startet danach von selbst neu.";
+    } else if (s.update.indexOf("fehler") === 0) {
+      t = "Das letzte Update hat nicht geklappt (" + esc(s.update.substr(8)) + "). Version " + esc(s.version) + " läuft weiter.";
+    } else {
+      t = "Version " + esc(s.neu) + " ist verfügbar, installiert ist " + esc(s.version) +
+        ". Das Dashboard lädt sie von GitHub und startet danach neu. Die Einstellungen bleiben erhalten.";
+    }
+    $("update-text").innerHTML = t;
+    knopf.className = "knopf primaer" + (updateGestartet ? " gesperrt" : "");
+    knopf.innerHTML = updateGestartet ? "Läuft" : "Installieren";
   }
 
   var taktUhr = null;
@@ -462,7 +514,8 @@
   function oeffne(id) {
     schliesseAlle();
     if (id === "dialog-laden") { dialogLaden(); }
-    if (id === "dialog-einstellungen") { segmente(); }
+    if (id === "dialog-einstellungen") { segmente(); versionKnopf(); }
+    if (id === "dialog-update") { dialogUpdate(); }
     $(id).className = "dialog offen";
     koerperKlasse();
   }
@@ -717,6 +770,17 @@
       if (t.id === "laden-knopf") { oeffne("dialog-laden"); return; }
       if (t.id === "einstellungen-knopf") { oeffne("dialog-einstellungen"); return; }
       if (t.id === "beenden") { zumKindle(); return; }
+      if (t.id === "version-knopf") {
+        if (updateDa()) { oeffne("dialog-update"); } else {
+          $("version-knopf").innerHTML = "wird geprüft";
+          befehl("/pruefen", function () { setTimeout(function () { werteHolen(versionKnopf); }, 35000); });
+        }
+        return;
+      }
+      if (t.id === "update-start") {
+        if (!updateGestartet) { updateGestartet = true; dialogUpdate(); befehl("/aktualisieren"); }
+        return;
+      }
       if (t.id === "laden-start") {
         if (einstellungen.quelle !== "anlage") { netzladung = !netzladung; schliesseAlle(); takt(); }
         return;

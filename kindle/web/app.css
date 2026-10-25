@@ -168,6 +168,10 @@ body.dialog-offen #schleier { display: block; }
 .dialog.offen { display: block; }
 .dialog h2 { font-size: 52px; display: -webkit-box; -webkit-box-align: center; }
 .dialog h2 svg { width: 56px; height: 56px; margin-right: 18px; }
+.dialog h2 .titel { display: block; -webkit-box-flex: 1; }
+.dialog h2 .version { display: block; font-size: 28px; font-weight: normal; color: #3a3a3a; padding: 10px 20px; border: 3px solid #b4b4b4; border-radius: 8px; white-space: nowrap; }
+.dialog h2 .version.neu { background: #000; color: #fff; border-color: #000; font-weight: bold; }
+.dialog h2 .version:empty { display: none; }
 .dialog p { font-size: 38px; line-height: 52px; margin-top: 24px; color: #3a3a3a; }
 .fakten { display: -webkit-box; margin-top: 32px; border-top: 2px solid #b4b4b4; border-bottom: 2px solid #b4b4b4; }
 .fakten div { -webkit-box-flex: 1; width: 0; padding: 22px 0; }

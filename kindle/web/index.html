@@ -97,7 +97,7 @@
   </div>
 
   <div id="dialog-einstellungen" class="dialog">
-    <h2><svg class="i"><use xlink:href="#zahnrad"/></svg>Einstellungen</h2>
+    <h2><svg class="i"><use xlink:href="#zahnrad"/></svg><span class="titel">Einstellungen</span><span class="version" id="version-knopf"></span></h2>
     <div class="einstellung">
       <span class="label">Ausrichtung</span>
       <div class="segment" id="ausrichtung"><div data-wert="hoch">Hochformat</div><div data-wert="quer-rechts" class="zwei">Quer<br>Kabel rechts</div><div data-wert="quer-links" class="zwei">Quer<br>Kabel links</div></div>
@@ -114,6 +114,15 @@
       <div class="knopf" id="beenden">Zum Kindle</div>
       <div class="knopf" id="einrichtung-knopf">Einrichtung</div>
       <div class="knopf primaer" data-schliessen="1">Fertig</div>
+    </div>
+  </div>
+
+  <div id="dialog-update" class="dialog">
+    <h2><svg class="i"><use xlink:href="#pfeil-runter"/></svg>Update</h2>
+    <p id="update-text"></p>
+    <div class="knoepfe">
+      <div class="knopf" data-schliessen="1">Abbrechen</div>
+      <div class="knopf primaer" id="update-start">Installieren</div>
     </div>
   </div>
 </div>

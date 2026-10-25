@@ -7,10 +7,14 @@ K="ssh -o BatchMode=yes -o ConnectTimeout=8 -i $HOME/.ssh/kindle_ed25519 -p 2223
 QUELLE=$(cd "$(dirname "$0")/../kindle" && pwd)
 
 $K 'mkdir -p /mnt/us/kindledash/web' || exit 1
-for f in dienst.sh installieren.sh kindledash.conf kindledash-starten.sh ssh-zugang.sh; do
+for f in dienst.sh installieren.sh kindledash.conf kindledash-starten.sh ssh-zugang.sh \
+         aktualisieren.sh befehl.sh kindledash-zuruecksetzen.sh; do
     $K "cat > /mnt/us/kindledash/$f" < "$QUELLE/$f" || exit 1
 done
 for f in config.xml index.html app.css app.js plz.js; do
     $K "cat > /mnt/us/kindledash/web/$f" < "$QUELLE/web/$f" || exit 1
 done
-$K 'lipc-set-prop com.lab126.appmgrd stop app://de.kindledash.app; sleep 2; sh /mnt/us/kindledash/installieren.sh'
+# Entwicklungsstand kennzeichnen, damit der Update-Knopf das nächste Release anbietet
+echo "entwicklung-$(git -C "$QUELLE/.." rev-parse --short HEAD)" | $K "cat > /mnt/us/kindledash/version.txt"
+# laufenden Dienst beenden, damit er mit den neuen Dateien startet
+$K 'for p in dienst befehl; do [ -f /tmp/kindledash/$p.pid ] && kill $(cat /tmp/kindledash/$p.pid) 2>/dev/null; rm -f /tmp/kindledash/$p.pid; done; lipc-set-prop com.lab126.appmgrd stop app://de.kindledash.app; sleep 2; sh /mnt/us/kindledash/installieren.sh'

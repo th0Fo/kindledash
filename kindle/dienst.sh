@@ -35,12 +35,21 @@ log() { echo "$(date '+%d.%m. %H:%M:%S') $*" >> $TMP/dienst.log; }
 schreiben() {
     # $1 ok (true/false), $2 GX, $3 Daten-JSON oder Fehlertext
     jetzt=$(date +%s)
+    v=$(cat $VZ/version.txt 2>/dev/null); n=$(cat $TMP/neu.txt 2>/dev/null); u=$(cat $TMP/update-status.txt 2>/dev/null)
+    stand="\"version\":\"$v\",\"neu\":\"$n\",\"update\":\"$u\""
     if [ "$1" = "true" ]; then
-        printf 'kindledashWerte({"ok":true,"geholt":%s,"gx":"%s","daten":%s});\n' "$jetzt" "$2" "$3" > $WERTE.neu
+        printf 'kindledashWerte({"ok":true,"geholt":%s,"gx":"%s",%s,"daten":%s});\n' "$jetzt" "$2" "$stand" "$3" > $WERTE.neu
     else
-        printf 'kindledashWerte({"ok":false,"geholt":%s,"gx":"%s","fehler":"%s"});\n' "$jetzt" "$2" "$3" > $WERTE.neu
+        printf 'kindledashWerte({"ok":false,"geholt":%s,"gx":"%s",%s,"fehler":"%s"});\n' "$jetzt" "$2" "$stand" "$3" > $WERTE.neu
     fi
     mv $WERTE.neu $WERTE
+}
+
+# Befehle der App (Update) kommen über einen lokalen Port, nur vom Kindle selbst erreichbar
+befehle_starten() {
+    [ -f $TMP/befehl.pid ] && kill -0 "$(cat $TMP/befehl.pid)" 2>/dev/null && return
+    busybox nc -lk -s 127.0.0.1 -p 8737 -e $VZ/befehl.sh 2>>$TMP/dienst.log &
+    echo $! > $TMP/befehl.pid
 }
 
 holen() {
@@ -83,12 +92,21 @@ if [ "$1" = "--boot" ]; then
 fi
 lipc-set-prop com.lab126.powerd preventScreenSaver 1
 ssh_starten
+chmod +x $VZ/befehl.sh 2>/dev/null
+befehle_starten
 [ "$1" = "--boot" ] || [ "$1" = "--app" ] && lipc-set-prop com.lab126.appmgrd start $APP
 
 fehler=0
 letzte_auffrischung=$(date +%s)
+# erste Update-Prüfung nach zwei Minuten, dann alle sechs Stunden
+naechste_pruefung=$(( $(date +%s) + 120 ))
 while true; do
     lipc-set-prop com.lab126.powerd preventScreenSaver 1 2>/dev/null
+    befehle_starten
+    if [ "$(date +%s)" -ge $naechste_pruefung ]; then
+        sh $VZ/aktualisieren.sh pruefen > /dev/null 2>&1 &
+        naechste_pruefung=$(( $(date +%s) + 21600 ))
+    fi
 
     if [ -s $GX_FEST ]; then gx=$(cat $GX_FEST); elif [ -s $GX_GEFUNDEN ]; then gx=$(cat $GX_GEFUNDEN); else gx=""; fi
 

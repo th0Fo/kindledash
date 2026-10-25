@@ -30,5 +30,7 @@ if ! cmp -s $VZ/kindledash.conf /etc/upstart/kindledash.conf; then
 fi
 
 cp $VZ/kindledash-starten.sh /mnt/us/documents/kindledash-starten.sh
+cp $VZ/kindledash-zuruecksetzen.sh /mnt/us/documents/kindledash-zuruecksetzen.sh
+chmod +x $VZ/befehl.sh
 sh $VZ/dienst.sh --app > /dev/null 2>&1 &
 echo "KindleDash läuft"
