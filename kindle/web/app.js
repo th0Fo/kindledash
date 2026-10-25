@@ -379,8 +379,10 @@
       if (localStorage.getItem("kindledash.updateGemeldet") === schluessel) { return; }
       localStorage.setItem("kindledash.updateGemeldet", schluessel);
     } catch (e) { /* dann eben jedes Mal in den zehn Minuten */ }
-    updateErgebnis = true;
+    // oeffne() schließt vorher alles und setzt dabei updateErgebnis zurück, also erst danach setzen
     oeffne("dialog-update");
+    updateErgebnis = true;
+    dialogUpdate();
   }
 
   var taktUhr = null;
@@ -436,7 +438,7 @@
     $("pv").className = "wert" + (daten.pvW >= 1000 ? " lang" : "");
     $("haus").innerHTML = daten.hausW + "<span>W</span>";
     $("haus").className = "wert" + (daten.hausW >= 1000 ? " lang" : "");
-    var grund = werte.fehler === "startet" ? "Verbindung wird aufgebaut" :
+    var grund = werte.fehler === "startet" || (!werte.letzte && startVersuche < 10) ? "Verbindung wird aufgebaut" :
       werte.fehler === "kein GX gefunden" ? "Kein GX im WLAN gefunden" :
       (werte.fehler === "Dienst läuft nicht" ? "Der Dienst auf dem Kindle läuft nicht" :
         (werte.gx ? "GX " + werte.gx + " antwortet nicht" : ""));
