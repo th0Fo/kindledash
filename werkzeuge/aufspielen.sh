@@ -9,10 +9,11 @@ QUELLE=$(cd "$(dirname "$0")/../kindle" && pwd)
 $K 'mkdir -p /mnt/us/kindledash/web' || exit 1
 for f in dienst.sh installieren.sh kindledash.conf kindledash-starten.sh ssh-zugang.sh \
          aktualisieren.sh befehl.sh kindledash-zuruecksetzen.sh; do
-    $K "cat > /mnt/us/kindledash/$f" < "$QUELLE/$f" || exit 1
+    # Windows-Zeilenenden aus der Arbeitskopie unterwegs entfernen
+    tr -d '\r' < "$QUELLE/$f" | $K "cat > /mnt/us/kindledash/$f" || exit 1
 done
 for f in config.xml index.html app.css app.js plz.js; do
-    $K "cat > /mnt/us/kindledash/web/$f" < "$QUELLE/web/$f" || exit 1
+    tr -d '\r' < "$QUELLE/web/$f" | $K "cat > /mnt/us/kindledash/web/$f" || exit 1
 done
 # Entwicklungsstand kennzeichnen, damit der Update-Knopf das nächste Release anbietet
 echo "entwicklung-$(git -C "$QUELLE/.." rev-parse --short HEAD)" | $K "cat > /mnt/us/kindledash/version.txt"
