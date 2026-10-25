@@ -238,13 +238,15 @@
   }
 
   // Ein Takt: neue Werte holen (Anlage) oder weiterrechnen (Demo), dann zeichnen
-  var ersterTakt = true;
+  var startVersuche = 0;
   function takt() {
     // auch in der Demo holen, die Datei trägt Version und Update-Stand
     werteHolen(function () {
       if (einstellungen.quelle === "anlage") { anlageWerte(); } else { demoSchritt(); }
       alles();
-      if (ersterTakt) { ersterTakt = false; updateErgebnisMelden(); }
+      updateErgebnisMelden();
+      // direkt nach dem Start kann der Dienst noch fehlen, dann gleich nochmal statt erst im nächsten Takt
+      if (!werte.letzte && startVersuche < 10) { startVersuche++; setTimeout(takt, 3000); }
       if ($("dialog-einstellungen").className.indexOf("offen") >= 0) { versionKnopf(); }
       if ($("dialog-update").className.indexOf("offen") >= 0) { dialogUpdate(); }
     });
@@ -370,7 +372,7 @@
   // Nach dem Neustart durch ein Update einmal melden, dass es geklappt hat
   function updateErgebnisMelden() {
     var z = updateZustand(), schluessel;
-    if (z.art !== "fertig" || !z.zeit) { return; }
+    if (updateErgebnis || z.art !== "fertig" || !z.zeit) { return; }
     if (new Date().getTime() / 1000 - z.zeit > 600) { return; }
     schluessel = z.version + "|" + z.zeit;
     try {

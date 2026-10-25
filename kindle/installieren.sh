@@ -29,6 +29,12 @@ if ! cmp -s $VZ/kindledash.conf /etc/upstart/kindledash.conf; then
     echo "Autostart eingerichtet"
 fi
 
+# Läuft die App schon, ihren Browser-Prozess beenden. Sonst startet sie nach einem
+# Update aus dem Speicher mit dem alten Code (am Kindle so passiert).
+lipc-set-prop com.lab126.appmgrd stop app://$ID 2>/dev/null
+sleep 1
+for p in $(ps | grep "[m]esquite -l $ID" | awk '{print $1}'); do kill $p 2>/dev/null; done
+
 cp $VZ/kindledash-starten.sh /mnt/us/documents/kindledash-starten.sh
 cp $VZ/kindledash-zuruecksetzen.sh /mnt/us/documents/kindledash-zuruecksetzen.sh
 sh $VZ/dienst.sh --app > /dev/null 2>&1 &
