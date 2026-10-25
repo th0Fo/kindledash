@@ -89,7 +89,12 @@
   .prognose .kwh span { font-size: var(--s-3); margin-left: 6px; }
   .prognose .anteil { font-size: var(--s-2); color: var(--tinte-2); text-align: right; line-height: 1.3; }
   .prognose .anteil b { font-family: var(--zahl); font-size: var(--s-4); color: var(--tinte); font-weight: 600; display: block; }
-  .kurve { margin-top: 18px; width: 100%; height: 190px; display: block; }
+  .legende { display: flex; gap: 28px; font-size: var(--s-1); color: var(--tinte-2); margin-top: 14px; }
+  .legende span { display: flex; align-items: center; gap: 10px; }
+  .legende i { display: block; width: 28px; }
+  .legende .flaeche-m { height: 18px; background: var(--flaeche); border-bottom: 2px solid var(--tinte-3); }
+  .legende .linie-m { height: 4px; background: var(--tinte); }
+  .kurve { margin-top: 8px; width: 100%; height: 170px; display: block; }
   .kurve text { font-family: var(--schrift); font-size: 22px; fill: var(--tinte-3); }
 
   /* 7 Tage */
@@ -151,14 +156,14 @@
 
   <section class="haupt">
     <div class="akku">
-      <div class="label">Batterie</div>
+      <div class="label">Ladestand Batterie</div>
       <div class="wert">78<span>%</span></div>
       <div class="zellen"><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="halb"></i><i></i><i></i></div>
       <div class="richtung"><svg class="i"><use href="#pfeil-hoch"/></svg>lädt mit 120 W</div>
     </div>
     <div class="fluss">
-      <div><div class="label">Sonne</div><div class="wert">420<span>W</span></div></div>
-      <div><div class="label">Haus</div><div class="wert">290<span>W</span></div></div>
+      <div><div class="label">Erzeugung Sonne</div><div class="wert">420<span>W</span></div></div>
+      <div><div class="label">Verbrauch Haus</div><div class="wert">290<span>W</span></div></div>
     </div>
     <div class="getrennt">
       <svg class="i"><use href="#wlan-aus"/></svg>
@@ -169,24 +174,25 @@
 
   <section class="heute">
     <div class="wetter-jetzt">
-      <div class="label">Wetter Hamm</div>
+      <div class="label">Wetter heute</div>
       <div class="zeile"><svg class="i"><use href="#sonne-wolke"/></svg><div class="temp">13°</div></div>
       <div class="text">heiter bis wolkig<br>7° bis 14°, trocken</div>
     </div>
     <div class="prognose">
       <div class="kopfzeile">
         <div>
-          <div class="label">Sonnenstrom heute</div>
+          <div class="label">Prognose Erzeugung heute</div>
           <div class="kwh">3,1<span>kWh</span></div>
         </div>
-        <div class="anteil"><b>65 %</b>einer Batterieladung</div>
+        <div class="anteil"><b>65 %</b>Batterieladung<br>rein aus Sonne</div>
       </div>
+      <div class="legende"><span><i class="flaeche-m"></i>Prognose</span><span><i class="linie-m"></i>gemessen</span></div>
       <svg class="kurve" id="kurve" viewBox="0 0 560 190" preserveAspectRatio="none"></svg>
     </div>
   </section>
 
   <section>
-    <div class="woche-kopf"><span class="label">7 Tage</span><span class="label">Sonnenstrom in kWh</span></div>
+    <div class="woche-kopf"><span class="label">Nächste 7 Tage</span><span class="label">Prognose Erzeugung in kWh</span></div>
     <div class="woche" id="woche"></div>
   </section>
 </main>
