@@ -421,8 +421,8 @@
 
     if (s === "standort") {
       html = "<h2>Wo steht die Anlage?</h2>" +
-        '<div class="unter">Gewählt: <b>' + esc(e.ort) + "</b>, " + esc(e.region) + "</div>" +
-        '<div class="eingabe-zeile"><input class="eingabe" id="as-suche" type="text" placeholder="Ort oder Ortsteil" value="' + esc(as.suche) + '">' +
+        '<div class="unter">Gewählt: <b>' + esc(e.ort) + "</b>" + (e.region ? ", " + esc(e.region) : "") + "</div>" +
+        '<div class="eingabe-zeile"><input class="eingabe" id="as-suche" type="text" placeholder="Postleitzahl oder Ort" value="' + esc(as.suche) + '">' +
         '<div class="knopf" data-as="suchen">Suchen</div></div>' +
         '<div id="as-treffer">' + trefferListe() + "</div>";
     } else if (s === "module") {
@@ -468,6 +468,33 @@
     if (g) { as.entwurf.gx = g.value.replace(/\s/g, ""); }
   }
 
+  // Die Postleitzahlen liegen als plz.js auf dem Kindle (GeoNames). Sie werden
+  // erst bei der ersten Suche geladen, weil die Datei gut 300 KB groß ist.
+  function plzLaden(weiter) {
+    if (window.PLZ_DE) { weiter(); return; }
+    var s = document.createElement("script");
+    s.src = "plz.js";
+    s.onload = weiter;
+    s.onerror = function () { as.suchStatus = "Postleitzahlen fehlen"; $("as-treffer").innerHTML = trefferListe(); };
+    document.body.appendChild(s);
+  }
+
+  function plzSuchen(anfang) {
+    plzLaden(function () {
+      var t = [], k, p;
+      for (k in window.PLZ_DE) {
+        if (window.PLZ_DE.hasOwnProperty(k) && k.indexOf(anfang) === 0) {
+          p = window.PLZ_DE[k];
+          t.push({ name: k + " " + p[2], admin1: "", admin3: "", latitude: p[0], longitude: p[1] });
+          if (t.length >= 6) { break; }
+        }
+      }
+      as.suchStatus = t.length ? "" : "Postleitzahl nicht gefunden";
+      as.treffer = t;
+      if (as.entwurf && SCHRITTE[as.schritt] === "standort") { $("as-treffer").innerHTML = trefferListe(); }
+    });
+  }
+
   function ortSuchen() {
     eingabenUebernehmen();
     var name = as.suche.replace(/^\s+|\s+$/g, "");
@@ -475,6 +502,7 @@
     as.suchStatus = "Suche läuft";
     as.treffer = null;
     $("as-treffer").innerHTML = trefferListe();
+    if (/^\d{2,5}$/.test(name)) { plzSuchen(name); return; }
     var x = new XMLHttpRequest();
     x.open("GET", "https://geocoding-api.open-meteo.com/v1/search?count=5&language=de&countryCode=DE&name=" +
       encodeURIComponent(name), true);
