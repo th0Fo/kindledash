@@ -1,0 +1,80 @@
+/* Automatisch erzeugt aus app.css von werkzeuge/kindle_dunkel.py - nicht von Hand aendern.
+ * Dunkelmodus: jede Farbe invertiert, wie der Dunkelmodus der Kindle-Firmware. */
+body.dunkel { background: #000000; color: #ffffff; }
+body.dunkel #seite { background: #000000; }
+body.dunkel .label { color: #919191; }
+body.dunkel svg.i { stroke: #ffffff; }
+body.dunkel #kopf #uhr { color: #919191; }
+body.dunkel .status { color: #c5c5c5; }
+body.dunkel .knopf-icon.aktiv { background: #ffffff; }
+body.dunkel .knopf-icon.aktiv svg { stroke: #000000; }
+body.dunkel.netzausfall #kopf .datum, body.dunkel.netzausfall #kopf #uhr, body.dunkel.netzausfall .status { color: #000000; }
+body.dunkel.netzausfall #kopf svg.i { stroke: #000000; }
+body.dunkel #kopf-hintergrund { background: #ffffff; }
+body.dunkel.hoch #haupt { border-bottom: 3px solid #ffffff; }
+body.dunkel .zellen i { border: 3px solid #ffffff; }
+body.dunkel .zellen i.voll { background: #ffffff; }
+body.dunkel .zellen i.halb { background: -webkit-linear-gradient(left, #ffffff 50%, #000000 50%); }
+body.dunkel .restzeit { color: #c5c5c5; }
+body.dunkel .fluss-wert { border-left: 3px solid #4b4b4b; }
+body.dunkel .fluss-wert .wert span { color: #c5c5c5; }
+body.dunkel.quer #fluss { border-top: 3px solid #ffffff; }
+body.dunkel #getrennt .klein { color: #c5c5c5; }
+body.dunkel.hoch #heute { border-bottom: 2px solid #4b4b4b; }
+body.dunkel.quer #heute { border-bottom: 2px solid #4b4b4b; }
+body.dunkel #trenner { background: #ffffff; }
+body.dunkel #wetter .text { color: #c5c5c5; }
+body.dunkel .anteil { color: #c5c5c5; }
+body.dunkel .anteil b { color: #ffffff; }
+body.dunkel .legende { color: #c5c5c5; }
+body.dunkel .legende .flaeche-m { background: #1b1b1b; border-bottom: 2px solid #919191; }
+body.dunkel .legende .jetzt-m { border-left: 2px dashed #ffffff; }
+body.dunkel .sv-flaeche { fill: #1b1b1b; stroke: #919191; }
+body.dunkel .sv-achse, body.dunkel .sv-bogen { stroke: #919191; }
+body.dunkel .sv-jetzt, body.dunkel .sv-modul { stroke: #ffffff; }
+body.dunkel .sv-boden { stroke: #4b4b4b; }
+body.dunkel .sv-text { fill: #919191; }
+body.dunkel .sv-wert { fill: #ffffff; }
+body.dunkel .tag { border-left: 2px solid #1b1b1b; }
+body.dunkel .tag.heute-tag .name { background: #ffffff; color: #000000; }
+body.dunkel .tag .t span { color: #919191; }
+body.dunkel .tag .saeule { background: #1b1b1b; }
+body.dunkel .tag .saeule i { background: #c5c5c5; }
+body.dunkel #schleier { background: rgba(0, 0, 0,0.72); }
+body.dunkel .dialog { background: #000000; border: 4px solid #ffffff; }
+body.dunkel .balken { border: 4px solid #ffffff; background: #000000; }
+body.dunkel .balken i { background: #ffffff; }
+body.dunkel .balken-zeile { color: #c5c5c5; }
+body.dunkel .balken-zeile b { color: #ffffff; }
+body.dunkel .knopf.gesperrt { background: #000000; color: #919191; border-color: #4b4b4b; }
+body.dunkel .dialog h2 .version { color: #c5c5c5; border: 3px solid #4b4b4b; }
+body.dunkel .dialog h2 .version.neu { background: #ffffff; color: #000000; border-color: #ffffff; }
+body.dunkel .dialog p { color: #c5c5c5; }
+body.dunkel .fakten { border-top: 2px solid #4b4b4b; border-bottom: 2px solid #4b4b4b; }
+body.dunkel .knopf { border: 4px solid #ffffff; }
+body.dunkel .knopf.primaer { background: #ffffff; color: #000000; }
+body.dunkel #assistent { background: #000000; }
+body.dunkel .as-fortschritt i { background: #1b1b1b; }
+body.dunkel .as-fortschritt i.an { background: #ffffff; }
+body.dunkel .as-inhalt .unter { color: #c5c5c5; }
+body.dunkel .eingabe { border: 4px solid #ffffff; background: #000000; color: #ffffff; }
+body.dunkel .treffer { border-top: 2px solid #4b4b4b; }
+body.dunkel .treffer div { border-bottom: 2px solid #4b4b4b; }
+body.dunkel .treffer span { color: #919191; }
+body.dunkel .treffer div.an { background: #ffffff; color: #000000; }
+body.dunkel .treffer div.an span { color: #1b1b1b; }
+body.dunkel .hinweis-zeile { color: #c5c5c5; }
+body.dunkel .regler { border-bottom: 2px solid #1b1b1b; }
+body.dunkel .regler .label { color: #ffffff; }
+body.dunkel .regler .minus, body.dunkel .regler .plus { border: 4px solid #ffffff; }
+body.dunkel .kompass div { border: 4px solid #ffffff; }
+body.dunkel .kompass div span { color: #c5c5c5; }
+body.dunkel .kompass div.an { background: #ffffff; color: #000000; }
+body.dunkel .kompass div.an span { color: #1b1b1b; }
+body.dunkel .kompass div.mitte { border-color: #000000; }
+body.dunkel .uebersicht { border-top: 2px solid #4b4b4b; }
+body.dunkel .uebersicht div { border-bottom: 2px solid #4b4b4b; }
+body.dunkel .uebersicht div span { color: #919191; }
+body.dunkel .segment { border: 4px solid #ffffff; }
+body.dunkel .segment div { border-left: 4px solid #ffffff; }
+body.dunkel .segment div.an { background: #ffffff; color: #000000; }

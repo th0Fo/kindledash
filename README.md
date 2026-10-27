@@ -9,6 +9,12 @@ E-Ink-Dashboard auf einem Kindle Paperwhite 3 für das Victron-Hauskraftwerk.
 | `werkzeuge` | Hilfsskripte am PC |
 | `entwurf` | Entwürfe und Bildschirmfotos |
 
+## Dunkel und Beleuchtung
+
+**Dunkel**: Nie, Nachts (Vorgabe, von Sonnenuntergang bis Sonnenaufgang laut Open-Meteo) oder Immer. Alle Farben sind invertiert. Sie stehen in `kindle/web/dunkel.css`, erzeugt aus `app.css` mit `python werkzeuge/kindle_dunkel.py` (aus PiHome übernommen). Nach jeder Änderung an `app.css` neu erzeugen, `--pruefen` meldet einen veralteten Stand. Beim Wechsel frischt der Bildschirm einmal komplett auf.
+
+**Beleuchtung aus nach**: nie, 2, 5 (Vorgabe) oder 15 Minuten ohne Berührung. Dann setzt der Dienst die Beleuchtung per `lipc` auf 0. Der nächste Tipp schaltet sie wieder ein und löst sonst nichts aus. Die Helligkeit davor merkt sich `/mnt/us/kindledash/licht.txt`.
+
 ## Updates
 
 Der Kindle bietet nur Releases an, keine Zwischenstände von `main`.

@@ -63,7 +63,9 @@
   function wetterCode(c) { return WETTER[c] || ["wolke", ""]; }
 
   // quelle: "anlage", "demo" oder "demo-ausfall"; takt in Minuten
-  var einstellungen = { ausrichtung: "hoch", quelle: "anlage", takt: 1 };
+  // dunkel: "aus", "sonne" (von Sonnenuntergang bis Sonnenaufgang) oder "immer"
+  // lichtAus: Minuten ohne Berührung, bis die Beleuchtung ausgeht (0 = nie)
+  var einstellungen = { ausrichtung: "hoch", quelle: "anlage", takt: 1, dunkel: "sonne", lichtAus: 5 };
   var netzladung = false;
   var oeffneLaden = false;
 
@@ -76,6 +78,9 @@
     } catch (e) { /* ohne Speicher gelten die Vorgaben */ }
     var m = /[#&](hoch|quer-links|quer-rechts)/.exec(location.hash);
     if (m) { einstellungen.ausrichtung = m[1]; }
+    // zum Testen am PC: #dunkel (immer dunkel), #hell (nie dunkel)
+    if (/[#&]dunkel/.test(location.hash)) { einstellungen.dunkel = "immer"; }
+    if (/[#&]hell/.test(location.hash)) { einstellungen.dunkel = "aus"; }
     // Testansichten am PC: #normal und #netzausfall zeigen die Demo, #offline die Anlage ohne Werte
     var z = /[#&](normal|netzausfall|offline|laden)/.exec(location.hash);
     if (z) {
@@ -116,8 +121,50 @@
     return "normal";
   }
 
+  // --- Dunkel und Beleuchtung --------------------------------------------------
+
+  function minutenVon(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})/.exec(hhmm || "");
+    return m ? +m[1] * 60 + +m[2] : null;
+  }
+
+  // Dunkel von Sonnenuntergang bis Sonnenaufgang, die Zeiten kommen mit dem Wetter.
+  // Ohne Wetter gilt 19 bis 7 Uhr.
+  function dunkelJetzt() {
+    if (einstellungen.dunkel === "immer") { return true; }
+    if (einstellungen.dunkel !== "sonne") { return false; }
+    var t = prognose && prognose.tage[0], auf = t ? minutenVon(t.auf) : null, unter = t ? minutenVon(t.unter) : null;
+    if (auf === null || unter === null) { auf = 7 * 60; unter = 19 * 60; }
+    var d = new Date(), n = d.getHours() * 60 + d.getMinutes();
+    return n >= unter || n < auf;
+  }
+
+  // Die App kann das Licht nicht selbst schalten, das macht dienst.sh per lipc (Signaldatei)
+  var lichtAn = true, letzteBeruehrung = new Date().getTime(), warDunkel = null;
+
+  function lichtAusschalten() {
+    if (!lichtAn) { return; }
+    lichtAn = false;
+    befehl("licht-aus");
+  }
+
+  function lichtEinschalten() {
+    lichtAn = true;
+    befehl("licht-an");
+  }
+
+  function ruhePruefen() {
+    var ruhe = new Date().getTime() - letzteBeruehrung;
+    if (einstellungen.lichtAus && ruhe >= einstellungen.lichtAus * 60000) { lichtAusschalten(); }
+  }
+
   function koerperKlasse() {
     var c = [ausrichtung(), zustand()];
+    var d = dunkelJetzt();
+    if (d) { c.push("dunkel"); }
+    // Beim Wechsel hell und dunkel bliebe sonst das alte Bild als Geist stehen
+    if (warDunkel !== null && d !== warDunkel) { befehl("auffrischen"); }
+    warDunkel = d;
     if (ausrichtung() === "quer" && window.innerWidth < window.innerHeight) {
       c.push("gedreht");
       c.push(einstellungen.ausrichtung === "quer-links" ? "ccw" : "cw");
@@ -286,8 +333,9 @@
     return !!(s && s.neu && s.neu !== s.version);
   }
 
+  // je Befehl ein eigenes Skript-Element, sonst bricht ein schneller zweiter Befehl den ersten ab
   function befehl(name, weiter) {
-    skriptLaden("befehl-skript", BEFEHL_ORDNER + name + ".js", weiter);
+    skriptLaden("befehl-" + name, BEFEHL_ORDNER + name + ".js", weiter);
   }
 
   function versionKnopf() {
@@ -450,7 +498,7 @@
   function wetterUrl() {
     return "https://api.open-meteo.com/v1/forecast?latitude=" + anlage.lat + "&longitude=" + anlage.lon +
       "&current=temperature_2m,weather_code" +
-      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
       "&hourly=global_tilted_irradiance&tilt=" + anlage.neigung + "&azimuth=" + RICHTUNGEN[anlage.richtung][0] +
       "&timezone=Europe%2FBerlin&forecast_days=7";
   }
@@ -476,6 +524,9 @@
         max: Math.round(r.daily.temperature_2m_max[i]),
         min: Math.round(r.daily.temperature_2m_min[i]),
         regen: r.daily.precipitation_probability_max[i],
+        // "2026-10-27T07:19" wird zu "07:19"
+        auf: r.daily.sunrise ? String(r.daily.sunrise[i]).substr(11, 5) : "",
+        unter: r.daily.sunset ? String(r.daily.sunset[i]).substr(11, 5) : "",
         kwh: summe / 1000,
         stunden: w
       });
@@ -546,17 +597,18 @@
     flaeche += " L" + W + " " + unten + " Z";
     var achse = "", k;
     for (k = von; k <= bis; k += 2) {
-      achse += '<text x="' + x(k) + '" y="' + (H - 4) + '" font-size="22" fill="#6e6e6e" text-anchor="' +
+      achse += '<text class="sv-text" x="' + x(k) + '" y="' + (H - 4) + '" font-size="22" text-anchor="' +
         (k === von ? "start" : (k === bis ? "end" : "middle")) + '">' + k + "</text>";
     }
     var jetzt = new Date(), jh = jetzt.getHours() + jetzt.getMinutes() / 60, marke = "";
     if (jh > von && jh < bis) {
-      marke = '<line x1="' + x(jh) + '" y1="8" x2="' + x(jh) + '" y2="' + unten +
-        '" stroke="#000" stroke-width="2" stroke-dasharray="4 5"/>';
+      marke = '<line class="sv-jetzt" x1="' + x(jh) + '" y1="8" x2="' + x(jh) + '" y2="' + unten +
+        '" stroke-width="2" stroke-dasharray="4 5"/>';
     }
+    // Farben über Klassen in app.css, damit dunkel.css sie mit umdreht
     $("kurve").innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' +
-      '<path d="' + flaeche + '" fill="#e4e4e4" stroke="#6e6e6e" stroke-width="2"/>' +
-      '<line x1="0" y1="' + unten + '" x2="' + W + '" y2="' + unten + '" stroke="#6e6e6e" stroke-width="2"/>' +
+      '<path class="sv-flaeche" d="' + flaeche + '" stroke-width="2"/>' +
+      '<line class="sv-achse" x1="0" y1="' + unten + '" x2="' + W + '" y2="' + unten + '" stroke-width="2"/>' +
       marke + achse + "</svg>";
   }
 
@@ -587,7 +639,7 @@
   }
 
   function segmente() {
-    var gruppen = ["ausrichtung", "quelle", "takt"], g, el, kinder, i;
+    var gruppen = ["ausrichtung", "quelle", "takt", "dunkel", "lichtAus"], g, el, kinder, i;
     for (g = 0; g < gruppen.length; g++) {
       el = $(gruppen[g]);
       kinder = el.getElementsByTagName("div");
@@ -663,11 +715,11 @@
     var x1 = x0 + L * Math.cos(r), y1 = y0 - L * Math.sin(r);
     var bogen = 110, bx = x0 + bogen * Math.cos(r), by = y0 - bogen * Math.sin(r);
     return '<svg class="dach" width="640" height="340" viewBox="0 0 640 340">' +
-      '<line x1="40" y1="300" x2="600" y2="300" stroke="#b4b4b4" stroke-width="4"/>' +
-      '<line x1="' + x0 + '" y1="' + y0 + '" x2="' + x1.toFixed(1) + '" y2="' + y1.toFixed(1) + '" stroke="#000" stroke-width="16" stroke-linecap="round"/>' +
-      (grad > 0 ? '<path d="M' + (x0 + bogen) + " " + y0 + " A" + bogen + " " + bogen + " 0 0 0 " + bx.toFixed(1) + " " + by.toFixed(1) +
-        '" fill="none" stroke="#6e6e6e" stroke-width="3"/>' : "") +
-      '<text x="' + (x0 + bogen + 24) + '" y="' + (y0 - 18) + '" font-size="40" font-weight="bold" fill="#000">' + grad + "°</text></svg>";
+      '<line class="sv-boden" x1="40" y1="300" x2="600" y2="300" stroke-width="4"/>' +
+      '<line class="sv-modul" x1="' + x0 + '" y1="' + y0 + '" x2="' + x1.toFixed(1) + '" y2="' + y1.toFixed(1) + '" stroke-width="16" stroke-linecap="round"/>' +
+      (grad > 0 ? '<path class="sv-bogen" d="M' + (x0 + bogen) + " " + y0 + " A" + bogen + " " + bogen + " 0 0 0 " + bx.toFixed(1) + " " + by.toFixed(1) +
+        '" stroke-width="3"/>' : "") +
+      '<text class="sv-wert" x="' + (x0 + bogen + 24) + '" y="' + (y0 - 18) + '" font-size="40" font-weight="bold">' + grad + "°</text></svg>";
   }
 
   function trefferListe() {
@@ -844,12 +896,17 @@
   function zumKindle() {
     var k = window.kindle;
     if (!k || !k.appmgr) { return; }
+    // die Kindle-Oberfläche soll nicht im Dunkeln bleiben
+    if (!lichtAn) { lichtEinschalten(); }
     try { k.appmgr.start("app://com.lab126.booklet.home"); } catch (e) {
       try { k.appmgr.back(); } catch (e2) { /* nichts zu tun */ }
     }
   }
 
   function klick(e) {
+    letzteBeruehrung = new Date().getTime();
+    // Ist die Beleuchtung aus, macht der erste Tipp nur das Licht an. Im Dunkeln sieht man sonst nicht, was man trifft.
+    if (!lichtAn) { lichtEinschalten(); return; }
     var t = e.target;
     while (t && t !== document.body) {
       if (t.getAttribute && t.getAttribute("data-as")) { assistentAktion(t.getAttribute("data-as"), t); return; }
@@ -885,7 +942,7 @@
       if (t.id === "schleier" || t.getAttribute("data-schliessen")) { schliesseAlle(); return; }
       if (t.getAttribute("data-wert") && t.parentNode && t.parentNode.className === "segment") {
         var gruppe = t.parentNode.id, wert = t.getAttribute("data-wert");
-        einstellungen[gruppe] = gruppe === "takt" ? +wert : wert;
+        einstellungen[gruppe] = gruppe === "takt" || gruppe === "lichtAus" ? +wert : wert;
         speichern();
         if (gruppe === "takt") { taktStarten(); }
         if (gruppe === "quelle") { netzladung = false; takt(); }
@@ -903,11 +960,17 @@
   alles();
   takt();
   taktStarten();
-  if (oeffneLaden) { oeffne("dialog-laden"); }
+  // Testansichten am PC: #laden und #einstellungen öffnen das Fenster, sobald die ersten Werte da sind
+  if (oeffneLaden) { setTimeout(function () { oeffne("dialog-laden"); }, 1500); }
+  if (/[#&]einstellungen/.test(location.hash)) { setTimeout(function () { oeffne("dialog-einstellungen"); }, 1500); }
   document.addEventListener("click", klick, false);
   document.addEventListener("keyup", function (e) {
+    letzteBeruehrung = new Date().getTime();
     if (e.keyCode === 13 && e.target && e.target.id === "as-suche") { ortSuchen(); }
   }, false);
+  setInterval(ruhePruefen, 15000);
+  // hell oder dunkel kann auch ohne neue Werte wechseln, etwa bei Sonnenuntergang
+  setInterval(koerperKlasse, 60000);
   // Beim ersten Start fragt der Assistent die Anlage ab. #assistent-3 öffnet ihn zum Testen bei Schritt 3.
   var at = /[#&]assistent-?(\d)?/.exec(location.hash);
   var testansicht = /[#&](normal|netzausfall|offline|laden)/.test(location.hash);

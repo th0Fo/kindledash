@@ -50,23 +50,52 @@ schreiben() {
 # Die Dateien stehen auf einer Zugriffszeit von 2020; liest jemand eine, wird ihre
 # Zugriffszeit neuer als die Änderungszeit (relatime auf /var), und das erkennt die
 # Schleife hier jede Sekunde.
+BEFEHLE="pruefen aktualisieren auffrischen licht-aus licht-an"
+
+auffrischen() {
+    /mnt/us/libkh/bin/fbink -q -f -s < /dev/null
+}
+
+# Beleuchtung (wie in PiHome): Die App meldet nach einer Weile ohne Berührung "licht-aus"
+# und beim nächsten Tipp "licht-an". Die Helligkeit davor merkt sich licht.txt.
+licht() {
+    w=$(lipc-get-prop com.lab126.powerd flIntensity 2>/dev/null)
+    case "$w" in ''|*[!0-9]*) w=0 ;; esac
+    if [ "$1" = aus ]; then
+        [ "$w" -gt 0 ] && echo "$w" > $VZ/licht.txt
+        lipc-set-prop com.lab126.powerd flIntensity 0
+    elif [ "$w" -eq 0 ]; then
+        s=$(cat $VZ/licht.txt 2>/dev/null)
+        case "$s" in ''|*[!0-9]*|0) s=12 ;; esac
+        lipc-set-prop com.lab126.powerd flIntensity "$s"
+    fi
+}
+
 befehle_starten() {
     [ -f $TMP/befehl.pid ] && kill -0 "$(cat $TMP/befehl.pid)" 2>/dev/null && return
     (
         mkdir -p $TMP/befehl
-        for b in pruefen aktualisieren; do
+        for b in $BEFEHLE; do
             echo "kindledashBefehl(\"$b\");" > $TMP/befehl/$b.js
             touch -t 202001010000 $TMP/befehl/$b.js
         done
         while true; do
-            for b in pruefen aktualisieren; do
+            for b in $BEFEHLE; do
                 f=$TMP/befehl/$b.js
                 if [ "$(stat -c %X $f)" -gt "$(stat -c %Y $f)" ]; then
                     touch -t 202001010000 $f
-                    case "$(cat $TMP/update-status.txt 2>/dev/null)" in laeuft*) continue ;; esac
                     log "Befehl $b"
-                    if [ $b = aktualisieren ]; then aufgabe=installieren; else aufgabe=pruefen; fi
-                    nohup sh $VZ/aktualisieren.sh $aufgabe > /dev/null 2>&1 &
+                    case $b in
+                        auffrischen) sleep 1; auffrischen ;;
+                        licht-aus) licht aus ;;
+                        licht-an) licht an ;;
+                        pruefen|aktualisieren)
+                            # kein zweites Update, solange eins läuft
+                            case "$(cat $TMP/update-status.txt 2>/dev/null)" in laeuft*) continue ;; esac
+                            if [ $b = aktualisieren ]; then aufgabe=installieren; else aufgabe=pruefen; fi
+                            nohup sh $VZ/aktualisieren.sh $aufgabe > /dev/null 2>&1 &
+                            ;;
+                    esac
                 fi
             done
             sleep 1
@@ -116,6 +145,8 @@ fi
 lipc-set-prop com.lab126.powerd preventScreenSaver 1
 ssh_starten
 befehle_starten
+# Die App startet mit Licht an. War es beim Neustart (etwa durch ein Update) aus, wieder einschalten.
+[ -f $VZ/licht.txt ] && licht an
 # gleich eine frische Datei schreiben, sonst liest die App bis zur ersten Antwort den alten Stand
 schreiben false "" "startet"
 [ "$1" = "--boot" ] || [ "$1" = "--app" ] && lipc-set-prop com.lab126.appmgrd start $APP
@@ -148,7 +179,7 @@ while true; do
 
     jetzt=$(date +%s)
     if [ $((jetzt - letzte_auffrischung)) -ge 3600 ]; then
-        /mnt/us/libkh/bin/fbink -q -f -s
+        auffrischen
         letzte_auffrischung=$jetzt
     fi
 

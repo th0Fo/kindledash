@@ -12,7 +12,7 @@ for f in dienst.sh installieren.sh kindledash.conf kindledash-starten.sh ssh-zug
     # Windows-Zeilenenden aus der Arbeitskopie unterwegs entfernen
     tr -d '\r' < "$QUELLE/$f" | $K "cat > /mnt/us/kindledash/$f" || exit 1
 done
-for f in config.xml index.html app.css app.js plz.js; do
+for f in config.xml index.html app.css dunkel.css app.js plz.js; do
     tr -d '\r' < "$QUELLE/web/$f" | $K "cat > /mnt/us/kindledash/web/$f" || exit 1
 done
 # Entwicklungsstand kennzeichnen, damit der Update-Knopf das nächste Release anbietet

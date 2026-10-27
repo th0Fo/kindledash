@@ -132,6 +132,14 @@ body.quer .anteil { text-align: left; margin-top: 14px; }
 #kurve { margin-top: 6px; height: 170px; }
 #kurve svg { display: block; }
 
+/* Farben der gezeichneten Grafiken, als Klassen, damit dunkel.css sie mit umdreht */
+.sv-flaeche { fill: #e4e4e4; stroke: #6e6e6e; }
+.sv-achse, .sv-bogen { stroke: #6e6e6e; fill: none; }
+.sv-jetzt, .sv-modul { stroke: #000; }
+.sv-boden { stroke: #b4b4b4; }
+.sv-text { fill: #6e6e6e; }
+.sv-wert { fill: #000; }
+
 /* Woche */
 #woche-bereich { position: absolute; }
 body.hoch #woche-bereich { left: 56px; top: 1014px; width: 960px; height: 420px; }
@@ -158,9 +166,13 @@ body.quer .tag .saeule { height: 110px; }
 .dialog { display: none; position: absolute; background: #fff; border: 4px solid #000; border-radius: 12px; padding: 48px 48px 44px; }
 body.hoch .dialog { left: 56px; width: 960px; top: 300px; }
 body.quer .dialog { left: 244px; width: 960px; top: 120px; }
-body.quer #dialog-einstellungen { top: 24px; padding-top: 32px; padding-bottom: 32px; }
-body.quer #dialog-einstellungen .einstellung { margin-top: 22px; }
-body.quer #dialog-einstellungen .segment div { height: 84px; line-height: 76px; }
+body.hoch #dialog-einstellungen { top: 100px; }
+body.quer #dialog-einstellungen { top: 16px; padding-top: 26px; padding-bottom: 26px; }
+body.quer #dialog-einstellungen h2 { font-size: 44px; }
+body.quer #dialog-einstellungen .einstellung { margin-top: 14px; }
+body.quer #dialog-einstellungen .label { font-size: 26px; }
+body.quer #dialog-einstellungen .segment { margin-top: 6px; }
+body.quer #dialog-einstellungen .segment div { height: 76px; line-height: 68px; font-size: 30px; }
 body.quer #dialog-einstellungen .knoepfe { margin-top: 28px; }
 body.quer #dialog-einstellungen .knopf { height: 100px; line-height: 92px; }
 #update-fortschritt { display: none; margin-top: 32px; }
@@ -253,4 +265,4 @@ body.assistent-offen #seite { visibility: hidden; }
 .segment div:first-child { border-left: 0; }
 .segment div.an { background: #000; color: #fff; font-weight: bold; }
 .segment div.zwei { line-height: 36px; padding-top: 10px; font-size: 30px; }
-body.quer #dialog-einstellungen .segment div.zwei { line-height: 34px; padding-top: 7px; }
+body.quer #dialog-einstellungen .segment div.zwei { line-height: 30px; padding-top: 6px; font-size: 26px; }
